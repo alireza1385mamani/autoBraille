@@ -38,12 +38,14 @@ def build_addon(repo_dir: str) -> str:
 
     name, version = read_manifest_info(addon_dir)
     output_filename = f"{name}-{version}.nvda-addon"
-    output_path = os.path.join(repo_dir, output_filename)
+    dist_dir = os.path.join(repo_dir, "dist")
+    os.makedirs(dist_dir, exist_ok=True)
+    output_path = os.path.join(dist_dir, output_filename)
 
     if os.path.exists(output_path):
         os.remove(output_path)
 
-    print(f"Building {output_filename} from {addon_dir}...")
+    print(f"Building {output_filename} from {addon_dir} into {dist_dir}...")
 
     file_count = 0
     with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED) as z:

@@ -1,8 +1,9 @@
 import sys
 import os
 
-# Add add-on path to sys.path
-addon_dir = r"C:\Users\maman\AppData\Roaming\nvda\addons\autoBraille\globalPlugins"
+# Add add-on path to sys.path dynamically
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+addon_dir = os.path.join(repo_root, "addon", "globalPlugins")
 if addon_dir not in sys.path:
     sys.path.insert(0, addon_dir)
 
