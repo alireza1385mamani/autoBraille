@@ -1,6 +1,10 @@
 import sys
 import os
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Add add-on path to sys.path dynamically
 repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 addon_dir = os.path.join(repo_root, "addon", "globalPlugins")
