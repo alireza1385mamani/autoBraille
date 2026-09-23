@@ -1,0 +1,65 @@
+======================================================================
+AUTO BRAILLE - COMPREHENSIVE PLAIN TEXT TEST DOCUMENT
+======================================================================
+Use this document in Notepad, Notepad++, or any text editor with NVDA.
+
+----------------------------------------------------------------------
+SECTION 1: IN-LINE MULTI-SCRIPT OUTPUT TRANSLATION
+----------------------------------------------------------------------
+1.1 Mixed Persian and English in a single line:
+سلام! این یک test برای بررسی ترجمه چند زبانه است.
+
+1.2 Technical Commands and Code:
+برای کامپایل برنامه از دستور python build.py --release استفاده کنید.
+
+1.3 Numbers, Currency, and Punctuation:
+قیمت محصول 25000 تومان (معادل $0.50 USD) است. تلفن: +98 21 1234 5678.
+
+----------------------------------------------------------------------
+SECTION 2: TACTILE BOUNDARY INDICATORS (DOT 8 / DOT 7 / DOTS 7+8)
+----------------------------------------------------------------------
+Read the following line on your braille display:
+Welcome به جامعه نابینایان World
+
+What to feel:
+- If "Dot 8 under first cell of language change" is enabled in settings:
+  Cell 'ب' in "به" will have dot 8 raised.
+  Cell 'W' in "World" will have dot 8 raised.
+- If "Dots 7 and 8 underline" is enabled:
+  All cells of "به جامعه نابینایان" will have dots 7 and 8 raised.
+
+----------------------------------------------------------------------
+SECTION 3: CARET LANGUAGE ANNOUNCEMENT
+----------------------------------------------------------------------
+Move your cursor to the following characters and press your assigned
+gesture (e.g. NVDA + Shift + L):
+
+Target: [ W ] -> Expected: W: English / Latin (English (Unified) Grade 1)
+Target: [ ب ] -> Expected: ب: Arabic / Persian / Urdu / Kurdish (Persian Grade 1)
+Target: [ 5 ] -> Expected: 5: English / Latin (English (Unified) Grade 1)
+
+----------------------------------------------------------------------
+SECTION 4: MULTILINGUAL WORLD SCRIPTS
+----------------------------------------------------------------------
+4.1 Russian / Cyrillic:
+Привет мир! Это проверка многоязычного Брайля в NVDA.
+
+4.2 Hebrew:
+שלום עולם! זוהי בדיקת ברייל רב-לשונית ב-NVDA.
+
+4.3 Greek:
+Γειά σου κόσμε! Αυτή είναι μια δοکیμή μπράιγ στο NVDA.
+
+4.4 Hindi / Devanagari:
+नमस्ते दुनिया! यह एनवीडीए में बहुभाषी ब्रेल का परीक्षण है।
+
+----------------------------------------------------------------------
+SECTION 5: PERKINS BRAILLE INPUT SANDBOX
+----------------------------------------------------------------------
+Type below using your Perkins keyboard:
+1. With English Windows layout: Type "Hello"
+2. Switch Windows layout (Alt+Shift) to Persian: Type "سلام"
+3. Observe instant input table synchronization!
+
+[Type below this line]
+----------------------------------------------------------------------
