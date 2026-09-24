@@ -98,6 +98,17 @@ def escape_pot_str(s: str) -> str:
 		return f'"{s}"'
 
 
+def get_manifest_version(manifest_path: str) -> str:
+	"""Read add-on version dynamically from manifest.ini."""
+	if not os.path.isfile(manifest_path):
+		return "1.0.2"
+	with open(manifest_path, "r", encoding="utf-8-sig") as f:
+		content = "[DEFAULT]\n" + f.read()
+	cp = configparser.ConfigParser()
+	cp.read_string(content)
+	return cp.get("DEFAULT", "version", fallback="1.0.2").strip().strip('"').strip("'")
+
+
 def generate_pot() -> str:
 	repo_root = os.path.dirname(os.path.abspath(__file__))
 	addon_dir = os.path.join(repo_root, "addon")
@@ -105,6 +116,7 @@ def generate_pot() -> str:
 	locale_dir = os.path.join(addon_dir, "locale")
 	os.makedirs(locale_dir, exist_ok=True)
 	pot_path = os.path.join(locale_dir, "autoBraille.pot")
+	addon_version = get_manifest_version(manifest_path)
 
 	all_entries: List[Tuple[str, str, str]] = []
 
@@ -147,7 +159,7 @@ def generate_pot() -> str:
 		'#, fuzzy',
 		'msgid ""',
 		'msgstr ""',
-		'"Project-Id-Version: autoBraille 1.0.1\\n"',
+		f'"Project-Id-Version: autoBraille {addon_version}\\n"',
 		'"Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\\n"',
 		f'"POT-Creation-Date: {now}\\n"',
 		'"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"',

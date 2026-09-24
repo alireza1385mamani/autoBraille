@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-09-25
+
+### Fixed
+- **NVDA Secure Desktop / UAC Compliance**: Guarded settings panel registration against execution on Windows Secure Desktops (`globalVars.appArgs.secureMode`), complying strictly with NVDA Add-on Store publishing guidelines to prevent unauthorized UI exposure during elevation prompts.
+- **Translator Documentation Annotations**: Added explanatory `# Translators:` comments to all translatable UI elements, dialog controls, button labels, dropdown options, and gesture descriptions across `addon/globalPlugins/autoBraille/__init__.py` and `addon/globalPlugins/autoBraille/language_dialogs.py`.
+- **Standardized Braille Pin Mask Constants**: Replaced magic hex literals (`0x40`, `0x80`, `0xC0`) in `translator.py` with descriptive, named constants (`BRAILLE_DOT_7`, `BRAILLE_DOT_8`, `BRAILLE_DOTS_7_8`) matching the ISO/TR 11548-1 8-dot braille standard.
+- **Screen Reader & Braille Display Code Readability**: Refactored obscure single-character loop indices (`p`, `c`, `s`) in cursor routing and character mapping routines into semantic identifiers (`cell_idx`, `char_idx`, `braille_cell`), making the codebase significantly easier to audit and navigate with assistive tech.
+- **Test Suite Module Mock Isolation**: Re-engineered mock module handling across all test suites to reuse existing modules in `sys.modules`, resolving cross-suite mock collisions when running under Python 3.14 via the Python Install Manager (`py.exe`).
+
+### Added
+- **Gettext Localization Catalog Tool (`generate_pot.py`)**: Added an automated template extraction script parsing manifest metadata and Python AST calls into `addon/locale/autoBraille.pot` for worldwide translators.
+- **NVDA Add-on Store Metadata & Author Links**: Configured canonical repository URL and author contact links across `manifest.ini`, `readme.md`, and `readme.html`.
+
+---
+
 ## [1.0.1] - 2026-09-25
 
 ### Fixed
