@@ -49,7 +49,7 @@ if (-not (Test-Path $manifestPath)) {
 }
 
 $addonName = "autoBraille"
-$addonVersion = "1.0.0"
+$addonVersion = "1.0.1"
 
 Get-Content $manifestPath | ForEach-Object {
     if ($_ -match '^\s*name\s*=\s*(.+)$') {

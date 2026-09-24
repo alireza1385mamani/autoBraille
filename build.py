@@ -28,7 +28,7 @@ def read_manifest_info(addon_dir: str) -> tuple[str, str]:
     cp.read_string(content)
 
     name = cp.get("DEFAULT", "name", fallback="autoBraille").strip().strip('"').strip("'")
-    version = cp.get("DEFAULT", "version", fallback="1.0.0").strip().strip('"').strip("'")
+    version = cp.get("DEFAULT", "version", fallback="1.0.1").strip().strip('"').strip("'")
     return name, version
 
 def build_addon(repo_dir: str) -> str:
