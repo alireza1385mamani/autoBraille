@@ -22,6 +22,10 @@ import brailleInput
 import brailleTables
 import config
 import globalPluginHandler
+try:
+	import globalVars
+except ImportError:
+	globalVars = None
 import gui
 from gui.settingsDialogs import SettingsPanel
 from logHandler import log
@@ -104,6 +108,7 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		# =============================================================
 		# 1. Master Switches & Primary / Latin Language
 		# =============================================================
+		# Translators: Checkbox label to enable or disable automatic multi-language braille output translation
 		self.enabledCheckbox = sHelper.addItem(
 			wx.CheckBox(
 				self,
@@ -112,6 +117,7 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		)
 		self.enabledCheckbox.SetValue(cfg.get("enabled", True))
 
+		# Translators: Checkbox label to automatically synchronize Perkins braille keyboard input with active Windows layout
 		self.autoSyncInputCb = sHelper.addItem(
 			wx.CheckBox(
 				self,
@@ -120,6 +126,7 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		)
 		self.autoSyncInputCb.SetValue(cfg.get("autoSyncInputTable", True))
 
+		# Translators: Checkbox label to honor document language tags in web and office documents
 		self.honorDocLangCb = sHelper.addItem(
 			wx.CheckBox(
 				self,
@@ -129,11 +136,16 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		self.honorDocLangCb.SetValue(cfg.get("honorDocumentLang", True))
 
 		self.tactileMarkerOptions = [
+			# Translators: Option for no tactile indicator at language transitions
 			("none", _("None")),
+			# Translators: Option to raise Dot 8 under first cell of language change
 			("dot8_first", _("Dot 8 under first cell of language change")),
+			# Translators: Option to raise Dot 7 under first cell of language change
 			("dot7_first", _("Dot 7 under first cell of language change")),
+			# Translators: Option to underline secondary language cells with Dots 7 and 8
 			("dots78_secondary", _("Dots 7 and 8 underline under secondary language cells")),
 		]
+		# Translators: Label for tactile indicator dropdown selection
 		self.tactileMarkerChoice = sHelper.addLabeledControl(
 			_("&Tactile indicator for language boundaries:"),
 			wx.Choice,
@@ -149,9 +161,11 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 
 		# Primary Output Table
 		self.sorted_output_tables = sorted(self.available_output_tables, key=lambda t: t.displayName.lower())
+		# Translators: Option to automatically use active NVDA output braille table
 		prim_out_choices = [_("Automatic (Use active NVDA output table)")] + [
 			t.displayName for t in self.sorted_output_tables
 		]
+		# Translators: Label for primary output braille table selection
 		self.primaryChoice = sHelper.addLabeledControl(
 			_("&Primary output braille table:"), wx.Choice, choices=prim_out_choices
 		)
@@ -166,9 +180,11 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 
 		# Primary Input Table
 		self.sorted_input_tables = sorted(self.available_input_tables, key=lambda t: t.displayName.lower())
+		# Translators: Option to automatically follow active NVDA input braille table
 		prim_inp_choices = [_("Automatic (Follow active NVDA input table)")] + [
 			t.displayName for t in self.sorted_input_tables
 		]
+		# Translators: Label for primary Perkins braille input table selection
 		self.primaryInputChoice = sHelper.addLabeledControl(
 			_("Primary Perkins &input braille table:"), wx.Choice, choices=prim_inp_choices
 		)
@@ -185,8 +201,9 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		# 2. Active Secondary Braille Tables List
 		# =============================================================
 		sHelper.addItem(wx.StaticLine(self))
+		# Translators: Section heading for the active secondary braille tables list
 		sHelper.addItem(
-			wx.StaticText(self, label=_("Active Secondary Braille Tables (Auto-Detected):"))
+			wx.StaticText(self, label=_("&Active Secondary Braille Tables (Auto-Detected):"))
 		)
 
 		self.tablesList = wx.ListBox(self, style=wx.LB_SINGLE)
@@ -235,14 +252,17 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		# 3. Action Buttons (Add, Configure, Remove)
 		# =============================================================
 		btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+		# Translators: Button to add a new secondary braille table
 		self.addButton = wx.Button(self, label=_("&Add Table..."))
 		self.addButton.Bind(wx.EVT_BUTTON, self.onAddTable)
 		btn_sizer.Add(self.addButton, 0, wx.RIGHT, 5)
 
+		# Translators: Button to configure the selected secondary braille table
 		self.editButton = wx.Button(self, label=_("&Configure Table..."))
 		self.editButton.Bind(wx.EVT_BUTTON, self.onConfigureTable)
 		btn_sizer.Add(self.editButton, 0, wx.RIGHT, 5)
 
+		# Translators: Button to remove the selected secondary braille table
 		self.removeButton = wx.Button(self, label=_("&Remove Table"))
 		self.removeButton.Bind(wx.EVT_BUTTON, self.onRemoveTable)
 		btn_sizer.Add(self.removeButton, 0)
@@ -314,6 +334,8 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 	def onConfigureTable(self, event: wx.Event) -> None:
 		sel = self.tablesList.GetSelection()
 		if sel == wx.NOT_FOUND or not (0 <= sel < len(self.active_items)):
+			# Translators: Message box text when no table is selected for configuration
+			# Translators: Title of message box dialogs
 			gui.messageBox(
 				_("Please select a braille table from the list to configure."),
 				_("Auto Braille"),
@@ -440,13 +462,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			_orig_braille_input = current_input
 			bih.input = _hooked_braille_input
 
-		try:
-			from gui.settingsDialogs import NVDASettingsDialog
+		if not getattr(getattr(globalVars, "appArgs", None), "secureMode", False):
+			try:
+				from gui.settingsDialogs import NVDASettingsDialog
 
-			if AutoBrailleSettingsPanel not in NVDASettingsDialog.categoryClasses:
-				NVDASettingsDialog.categoryClasses.append(AutoBrailleSettingsPanel)
-		except Exception:
-			log.warning("Auto Braille: could not register settings panel", exc_info=True)
+				if AutoBrailleSettingsPanel not in NVDASettingsDialog.categoryClasses:
+					NVDASettingsDialog.categoryClasses.append(AutoBrailleSettingsPanel)
+			except Exception:
+				log.warning("Auto Braille: could not register settings panel", exc_info=True)
 
 		log.info("Auto Braille loaded successfully with streamlined active languages manager")
 
@@ -459,13 +482,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if _orig_braille_input and bih and getattr(bih, "input", None) == _hooked_braille_input:
 			bih.input = _orig_braille_input
 			_orig_braille_input = None
-		try:
-			from gui.settingsDialogs import NVDASettingsDialog
+		if not getattr(getattr(globalVars, "appArgs", None), "secureMode", False):
+			try:
+				from gui.settingsDialogs import NVDASettingsDialog
 
-			if AutoBrailleSettingsPanel in NVDASettingsDialog.categoryClasses:
-				NVDASettingsDialog.categoryClasses.remove(AutoBrailleSettingsPanel)
-		except Exception:
-			pass
+				if AutoBrailleSettingsPanel in NVDASettingsDialog.categoryClasses:
+					NVDASettingsDialog.categoryClasses.remove(AutoBrailleSettingsPanel)
+			except Exception:
+				pass
 		super().terminate()
 
 	def event_gainFocus(self, obj: Any, nextHandler: Callable[..., Any]) -> None:
@@ -542,6 +566,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			doc_lang_spans=doc_spans,
 		)
 
+	# Translators: Description for gesture script that toggles multi-script translation on and off
+	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
 	@script(
 		description=_("Toggles automatic universal multi-script braille translation on and off"),
 		category=_("Auto Braille"),
@@ -549,11 +575,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_toggleAutoBraille(self, gesture: Any) -> None:
 		new_val = not config.conf.get("autoBraille", {}).get("enabled", True)
 		config.conf["autoBraille"]["enabled"] = new_val
+		# Translators: Announcement when Auto Braille translation is enabled
+		# Translators: Announcement when Auto Braille translation is disabled
 		msg = _("Auto Braille enabled") if new_val else _("Auto Braille disabled")
 		ui.message(msg)
 		if braille.handler and api.getFocusObject():
 			braille.handler.handleGainFocus(api.getFocusObject())
 
+	# Translators: Description for gesture script that cycles Perkins braille keyboard input language
+	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
 	@script(
 		description=_("Cycles or toggles Perkins braille keyboard input language"),
 		category=_("Auto Braille"),
@@ -561,6 +591,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_toggleBrailleInputLanguage(self, gesture: Any) -> None:
 		input_sync.toggle_input_language()
 
+	# Translators: Description for gesture script that announces character, language, and table at caret
+	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
 	@script(
 		description=_("Announces the language and braille table at the caret or review cursor"),
 		category=_("Auto Braille"),
@@ -632,9 +664,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except Exception:
 			pass
 
+		# Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is script name, third %s is braille table)
 		if char and not char.isspace():
 			msg = _("%s: %s (%s)") % (char, script_name, table_disp)
 		else:
+			# Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is script name, second %s is braille table)
 			msg = _("%s (%s)") % (script_name, table_disp)
 
 		ui.message(msg)

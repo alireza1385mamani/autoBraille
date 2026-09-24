@@ -25,6 +25,11 @@ except ImportError:
 
 BRAILLE_PATTERNS = "braille-patterns.cti"
 
+# Standard 8-dot braille pin bitmasks (ISO/TR 11548-1)
+BRAILLE_DOT_7: int = 0x40        # Lower-left dot (Pin 7)
+BRAILLE_DOT_8: int = 0x80        # Lower-right dot (Pin 8)
+BRAILLE_DOTS_7_8: int = 0xC0     # Underline indicator (Pins 7 and 8)
+
 LEGACY_ENABLE_KEYS: Dict[str, str] = {
 	"arabic_persian": "enableArabicPersian",
 	"cyrillic": "enableCyrillic",
@@ -281,11 +286,11 @@ def multi_script_translate(
 			cells, b2r, r2b, cur = original_translate(table, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
 			if cells and seg_script != primary_script:
 				if tactile_marker == "dot8_first":
-					cells = [cells[0] | 0x80] + cells[1:]
+					cells = [cells[0] | BRAILLE_DOT_8] + cells[1:]
 				elif tactile_marker == "dot7_first":
-					cells = [cells[0] | 0x40] + cells[1:]
+					cells = [cells[0] | BRAILLE_DOT_7] + cells[1:]
 				elif tactile_marker == "dots78_secondary":
-					cells = [c | 0xC0 for c in cells]
+					cells = [cell | BRAILLE_DOTS_7_8 for cell in cells]
 			return cells, b2r, r2b, cur
 		except Exception:
 			return original_translate(active_tables, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
@@ -338,22 +343,22 @@ def multi_script_translate(
 		# Apply tactile marker if configured
 		if cells:
 			if tactile_marker == "dot8_first" and idx > 0 and script != segments[idx - 1][3]:
-				cells = [cells[0] | 0x80] + cells[1:]
+				cells = [cells[0] | BRAILLE_DOT_8] + cells[1:]
 			elif tactile_marker == "dot7_first" and idx > 0 and script != segments[idx - 1][3]:
-				cells = [cells[0] | 0x40] + cells[1:]
+				cells = [cells[0] | BRAILLE_DOT_7] + cells[1:]
 			elif tactile_marker == "dots78_secondary" and script != primary_script:
-				cells = [c | 0xC0 for c in cells]
+				cells = [cell | BRAILLE_DOTS_7_8 for cell in cells]
 
 		cell_offset = len(all_cells)
 		all_cells.extend(cells)
 
 		# Remap positions for cursor routing keys (cells -> raw characters)
-		for p in b2r:
-			all_b2r.append(start_idx + p)
+		for cell_idx in b2r:
+			all_b2r.append(start_idx + cell_idx)
 
 		# Remap positions for caret / focus cursor (raw characters -> cells)
-		for p in r2b:
-			all_r2b.append(cell_offset + p)
+		for char_idx in r2b:
+			all_r2b.append(cell_offset + char_idx)
 
 		# Track cursor position
 		if cur is not None and final_cursor_pos is None:

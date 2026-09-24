@@ -15,7 +15,6 @@ import types
 import builtins
 builtins._ = lambda s: s
 
-config_mock = types.ModuleType("config")
 class DummyConf(dict):
     spec = {}
     def __init__(self):
@@ -33,10 +32,16 @@ class DummyConf(dict):
             "translationTable": "en-ueb-g1.ctb",
             "inputTable": "en-ueb-g1.ctb",
         }
-config_mock.conf = DummyConf()
-sys.modules["config"] = config_mock
 
-braille_mock = types.ModuleType("braille")
+if "config" in sys.modules:
+    config_mock = sys.modules["config"]
+    config_mock.conf = DummyConf()
+else:
+    config_mock = types.ModuleType("config")
+    config_mock.conf = DummyConf()
+    sys.modules["config"] = config_mock
+
+braille_mock = sys.modules.get("braille") or types.ModuleType("braille")
 braille_mock.TABLES_DIR = r"C:\fake\tables"
 class DummyTable:
     def __init__(self, fn, dn, o=True, i=True):
@@ -44,7 +49,7 @@ class DummyTable:
         self.displayName = dn
         self.output = o
         self.input = i
-braille_tables_mock = types.ModuleType("brailleTables")
+braille_tables_mock = sys.modules.get("brailleTables") or types.ModuleType("brailleTables")
 braille_tables_mock.TABLES_DIR = r"C:\fake\tables"
 braille_tables_mock._tablesDirs = {"app": r"C:\fake\tables"}
 braille_tables_mock.listTables = lambda: [
@@ -57,25 +62,25 @@ braille_tables_mock.listTables = lambda: [
 sys.modules["braille"] = braille_mock
 sys.modules["brailleTables"] = braille_tables_mock
 
-addonHandler_mock = types.ModuleType("addonHandler")
+addonHandler_mock = sys.modules.get("addonHandler") or types.ModuleType("addonHandler")
 addonHandler_mock.initTranslation = lambda: None
 addonHandler_mock._ = lambda s: s
 sys.modules["addonHandler"] = addonHandler_mock
 
-globalPluginHandler_mock = types.ModuleType("globalPluginHandler")
+globalPluginHandler_mock = sys.modules.get("globalPluginHandler") or types.ModuleType("globalPluginHandler")
 class GlobalPlugin: pass
 globalPluginHandler_mock.GlobalPlugin = GlobalPlugin
 sys.modules["globalPluginHandler"] = globalPluginHandler_mock
 
-louis_mock = types.ModuleType("louis")
+louis_mock = sys.modules.get("louis") or types.ModuleType("louis")
 louis_mock.translate = lambda *a, **k: ([1, 2, 3], [0, 1, 2], [0, 1, 2], 0)
 sys.modules["louis"] = louis_mock
 
-louisHelper_mock = types.ModuleType("louisHelper")
+louisHelper_mock = sys.modules.get("louisHelper") or types.ModuleType("louisHelper")
 louisHelper_mock.translate = lambda *a, **k: ([1, 2, 3], [0, 1, 2], [0, 1, 2], 0)
 sys.modules["louisHelper"] = louisHelper_mock
 
-logHandler_mock = types.ModuleType("logHandler")
+logHandler_mock = sys.modules.get("logHandler") or types.ModuleType("logHandler")
 class DummyLog:
     def debug(self, *a, **k): pass
     def info(self, *a, **k): pass
@@ -84,22 +89,22 @@ class DummyLog:
 logHandler_mock.log = DummyLog()
 sys.modules["logHandler"] = logHandler_mock
 
-scriptHandler_mock = types.ModuleType("scriptHandler")
+scriptHandler_mock = sys.modules.get("scriptHandler") or types.ModuleType("scriptHandler")
 scriptHandler_mock.script = lambda **kwargs: (lambda f: f)
 sys.modules["scriptHandler"] = scriptHandler_mock
 
-ui_mock = types.ModuleType("ui")
+ui_mock = sys.modules.get("ui") or types.ModuleType("ui")
 ui_messages = []
 ui_mock.message = lambda msg: ui_messages.append(msg)
 sys.modules["ui"] = ui_mock
 
-api_mock = types.ModuleType("api")
+api_mock = sys.modules.get("api") or types.ModuleType("api")
 api_mock.getFocusObject = lambda: None
 api_mock.getReviewPosition = lambda: None
 sys.modules["api"] = api_mock
 
 braille_messages = []
-brailleInput_mock = types.ModuleType("brailleInput")
+brailleInput_mock = sys.modules.get("brailleInput") or types.ModuleType("brailleInput")
 brailleInput_mock.handler = types.SimpleNamespace(table=DummyTable("en-ueb-g1.ctb", "English"))
 braille_mock.handler = types.SimpleNamespace(message=lambda msg: braille_messages.append(msg))
 sys.modules["brailleInput"] = brailleInput_mock
@@ -115,7 +120,7 @@ class DummyControl:
     def Append(self, item): pass
     def Add(self, *a, **k): pass
 
-wx_mock = types.ModuleType("wx")
+wx_mock = sys.modules.get("wx") or types.ModuleType("wx")
 wx_mock.Dialog = DummyControl
 wx_mock.Sizer = DummyControl
 wx_mock.BoxSizer = DummyControl
@@ -140,10 +145,11 @@ wx_mock.EVT_CHAR_HOOK = 2
 wx_mock.EVT_BUTTON = 3
 sys.modules["wx"] = wx_mock
 
-gui_mock = types.ModuleType("gui")
-gui_mock.guiHelper = types.SimpleNamespace(BoxSizerHelper=object)
+gui_mock = sys.modules.get("gui") or types.ModuleType("gui")
+if not hasattr(gui_mock, "guiHelper"):
+    gui_mock.guiHelper = types.SimpleNamespace(BoxSizerHelper=object)
 gui_mock.messageBox = lambda *a, **k: None
-gui_mock.settingsDialogs = types.SimpleNamespace(SettingsPanel=object, NVDASettingsDialog=types.SimpleNamespace(categoryClasses=[]))
+gui_mock.settingsDialogs = getattr(gui_mock, "settingsDialogs", types.SimpleNamespace(SettingsPanel=object, NVDASettingsDialog=types.SimpleNamespace(categoryClasses=[])))
 sys.modules["gui"] = gui_mock
 sys.modules["gui.settingsDialogs"] = gui_mock.settingsDialogs
 

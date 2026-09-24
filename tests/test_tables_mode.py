@@ -16,7 +16,6 @@ import types
 import builtins
 builtins._ = lambda s: s
 
-config_mock = types.ModuleType("config")
 class DummyConf(dict):
     spec = {}
     def __init__(self):
@@ -32,8 +31,14 @@ class DummyConf(dict):
             "translationTable": "en-ueb-g1.ctb",
             "inputTable": "en-ueb-g1.ctb",
         }
-config_mock.conf = DummyConf()
-sys.modules["config"] = config_mock
+
+if "config" in sys.modules:
+    config_mock = sys.modules["config"]
+    config_mock.conf = DummyConf()
+else:
+    config_mock = types.ModuleType("config")
+    config_mock.conf = DummyConf()
+    sys.modules["config"] = config_mock
 
 braille_mock = types.ModuleType("braille")
 braille_mock.TABLES_DIR = r"C:\fake\tables"

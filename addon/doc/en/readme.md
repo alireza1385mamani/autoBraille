@@ -1,6 +1,7 @@
 # Auto Braille: Universal Multi-Script In-Line Translation & Perkins Input for NVDA
 
-* **Author:** Antigravity & Community
+* **Author:** Alireza Mamani & Antigravity (<https://github.com/alireza1385mamani>)
+* **Repository:** <https://github.com/alireza1385mamani/autoBraille>
 * **NVDA Compatibility:** NVDA 2024.1 to 2026.3+
 * **License:** GNU General Public License v2.0 (GPL-2.0)
 

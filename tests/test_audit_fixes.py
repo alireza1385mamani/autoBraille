@@ -255,6 +255,7 @@ config_mock.conf["autoBraille"]["tactileMarker"] = "dots78_secondary"
 cells78, _, _, _ = translator.multi_script_translate(mock_trans, ["en-ueb-g1.ctb"], "سلام")
 for c in cells78:
     assert c == 1 | 0xC0, f"Expected all cells to have dots 7 and 8 (193), got {c}"
+config_mock.conf["autoBraille"]["tactileMarker"] = "none"
 print("Single-segment tactile markers (dot8, dot7, dots78) verified!")
 
 print("\n=== 7. Testing announcement script on braces '{' and '}' ===")

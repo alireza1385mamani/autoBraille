@@ -88,6 +88,7 @@ class AddTableDialog(wx.Dialog):
 		sHelper = gui.guiHelper.BoxSizerHelper(self, sizer=main_sizer)
 
 		out_choices = [t.displayName for t in self.output_tables]
+		# Translators: Label for the output braille table choice in Add Secondary Braille Table dialog.
 		self.outputChoice = sHelper.addLabeledControl(
 			_("&Output braille table:"), wx.Choice, choices=out_choices
 		)
@@ -101,6 +102,7 @@ class AddTableDialog(wx.Dialog):
 		self.outputChoice.Bind(wx.EVT_CHOICE, self.onOutputTableChange)
 
 		inp_choices = [t.displayName for t in self.input_tables]
+		# Translators: Label for the Perkins input braille table choice in Add Secondary Braille Table dialog.
 		self.inputChoice = sHelper.addLabeledControl(
 			_("Perkins &input braille table:"), wx.Choice, choices=inp_choices
 		)
@@ -182,6 +184,7 @@ class EditTableDialog(wx.Dialog):
 		sHelper = gui.guiHelper.BoxSizerHelper(self, sizer=main_sizer)
 
 		out_choices = [t.displayName for t in self.output_tables]
+		# Translators: Label for the output braille table choice in Configure Braille Table dialog.
 		self.outputChoice = sHelper.addLabeledControl(
 			_("&Output braille table:"), wx.Choice, choices=out_choices
 		)
@@ -194,6 +197,7 @@ class EditTableDialog(wx.Dialog):
 		self.outputChoice.Bind(wx.EVT_CHOICE, self.onOutputTableChange)
 
 		inp_choices = [t.displayName for t in self.input_tables]
+		# Translators: Label for the Perkins input braille table choice in Configure Braille Table dialog.
 		self.inputChoice = sHelper.addLabeledControl(
 			_("Perkins &input braille table:"), wx.Choice, choices=inp_choices
 		)
