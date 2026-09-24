@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
 
 class ScriptInfo(NamedTuple):
@@ -246,6 +246,19 @@ SCRIPTS: List[ScriptInfo] = [
 		lang_ids=(0x044C,),
 		default_enabled=False,
 	),
+	ScriptInfo(
+		id="indic_sinhala",
+		name="Sinhala",
+		family="indic",
+		family_name="South Asian / Indic",
+		pattern=r"[\u0D80-\u0DFF]",
+		default_output_table="sin-in-g1.utb",
+		default_input_table="sin-in-g1.utb",
+		table_prefixes=("sin-", "si-"),
+		keywords=("sinhala", "sinhalese"),
+		lang_ids=(0x045B,),
+		default_enabled=False,
+	),
 
 	# 6. East Asian (CJK)
 	ScriptInfo(
@@ -364,9 +377,22 @@ SCRIPTS: List[ScriptInfo] = [
 		pattern=r"[\u10A0-\u10FF\u2D00-\u2D2F]",
 		default_output_table="ka.utb",
 		default_input_table="ka.utb",
-		table_prefixes=("ka.utb",),
+		table_prefixes=("ka.", "ka-", "ka.utb"),
 		keywords=("georgian",),
 		lang_ids=(0x0437,),
+		default_enabled=False,
+	),
+	ScriptInfo(
+		id="caucasian_armenian",
+		name="Armenian",
+		family="caucasian_african",
+		family_name="Caucasian, African & Ancient",
+		pattern=r"[\u0530-\u058F\uFB13-\uFB17]",
+		default_output_table="hy.ctb",
+		default_input_table="hy.ctb",
+		table_prefixes=("hy.", "hy-", "arm-"),
+		keywords=("armenian",),
+		lang_ids=(0x042B,),
 		default_enabled=False,
 	),
 	ScriptInfo(
@@ -539,8 +565,8 @@ DOC_LANG_MAP: Dict[str, str] = {
 	"pan": "indic_gurmukhi",
 	"gu": "indic_gujarati",
 	"guj": "indic_gujarati",
-	"or": "indic_odia",
-	"ori": "indic_odia",
+	"or": "indic_oriya",
+	"ori": "indic_oriya",
 	"ta": "indic_tamil",
 	"tam": "indic_tamil",
 	"te": "indic_telugu",
@@ -561,27 +587,27 @@ DOC_LANG_MAP: Dict[str, str] = {
 	"ko": "cjk_korean",
 	"kor": "cjk_korean",
 	# Southeast Asian
-	"th": "thai",
-	"tha": "thai",
-	"lo": "lao",
-	"lao": "lao",
-	"my": "burmese",
-	"mya": "burmese",
-	"km": "khmer",
-	"khm": "khmer",
-	"bo": "tibetan",
-	"bod": "tibetan",
+	"th": "sea_thai",
+	"tha": "sea_thai",
+	"lo": "sea_lao",
+	"lao": "sea_lao",
+	"my": "sea_burmese",
+	"mya": "sea_burmese",
+	"km": "sea_khmer",
+	"khm": "sea_khmer",
+	"bo": "sea_tibetan",
+	"bod": "sea_tibetan",
 	# Caucasian & African
-	"ka": "georgian",
-	"kat": "georgian",
-	"geo": "georgian",
-	"hy": "armenian",
-	"arm": "armenian",
-	"hye": "armenian",
-	"am": "ethiopic",
-	"amh": "ethiopic",
-	"ti": "ethiopic",
-	"tir": "ethiopic",
+	"ka": "caucasian_georgian",
+	"kat": "caucasian_georgian",
+	"geo": "caucasian_georgian",
+	"hy": "caucasian_armenian",
+	"arm": "caucasian_armenian",
+	"hye": "caucasian_armenian",
+	"am": "african_ethiopic",
+	"amh": "african_ethiopic",
+	"ti": "african_ethiopic",
+	"tir": "african_ethiopic",
 	# Latin / European
 	"en": "latin",
 	"eng": "latin",

@@ -12,19 +12,24 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Set-Location $ScriptDir
 
-# Check if Python is available to run tests or build.py
-$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+# Check if Python is available via py.exe (Python Install Manager) or python.exe
+$pythonCmd = Get-Command py.exe -ErrorAction SilentlyContinue
 if (-not $pythonCmd) {
-    $pythonCmd = Get-Command py -ErrorAction SilentlyContinue
+    $pythonCmd = Get-Command python.exe -ErrorAction SilentlyContinue
+}
+if (-not $pythonCmd) {
+    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
 }
 
 if ($RunTests) {
     Write-Host "Running test suite..." -ForegroundColor Cyan
     if ($pythonCmd) {
+        & $pythonCmd.Source tests/test_audit_fixes.py
         & $pythonCmd.Source tests/test_tables_mode.py
         & $pythonCmd.Source tests/test_features_3_4.py
         & $pythonCmd.Source tests/test_segmenter.py
@@ -73,7 +78,16 @@ Write-Host "Packaging $addonFolder into $addonFile..." -ForegroundColor Yellow
 $tempZip = Join-Path $distDir "temp_addon.zip"
 if (Test-Path $tempZip) { Remove-Item -Force $tempZip }
 
-Compress-Archive -Path "$addonFolder\*" -DestinationPath $tempZip -CompressionLevel Optimal
+$stagingDir = Join-Path $distDir "staging"
+if (Test-Path $stagingDir) { Remove-Item -Recurse -Force $stagingDir }
+New-Item -ItemType Directory -Path $stagingDir | Out-Null
+
+Copy-Item -Path "$addonFolder\*" -Destination $stagingDir -Recurse
+Get-ChildItem -Path $stagingDir -Include "__pycache__" -Recurse -Force | Remove-Item -Recurse -Force
+Get-ChildItem -Path $stagingDir -Include "*.pyc", "*.pyo" -Recurse -Force | Remove-Item -Force
+
+Compress-Archive -Path "$stagingDir\*" -DestinationPath $tempZip -CompressionLevel Optimal
+Remove-Item -Recurse -Force $stagingDir
 Move-Item -Force -Path $tempZip -Destination $addonFile
 
 $sizeKb = [math]::Round((Get-Item $addonFile).Length / 1024, 2)

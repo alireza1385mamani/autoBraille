@@ -14,6 +14,15 @@ import gui
 import wx
 
 try:
+	_ = _  # type: ignore
+except NameError:
+	try:
+		from addonHandler import initTranslation
+		initTranslation()
+	except Exception:
+		_ = lambda s: s
+
+try:
 	from . import scripts_data
 except ImportError:
 	import scripts_data

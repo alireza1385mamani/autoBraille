@@ -426,19 +426,25 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		super().__init__()
 		global _orig_braille_input
 
-		# Hook output translation
-		self._orig_translate = louisHelper.translate
-		louisHelper.translate = self._hooked_translate
+		# Hook output translation safely
+		if louisHelper.translate != self._hooked_translate:
+			self._orig_translate = louisHelper.translate
+			louisHelper.translate = self._hooked_translate
+		else:
+			self._orig_translate = getattr(self, "_orig_translate", louisHelper.translate)
 
-		# Hook Perkins braille keyboard input
-		_orig_braille_input = getattr(brailleInput.BrailleInputHandler, "input", None)
-		if _orig_braille_input:
-			brailleInput.BrailleInputHandler.input = _hooked_braille_input
+		# Hook Perkins braille keyboard input safely without re-wrapping
+		bih = getattr(brailleInput, "BrailleInputHandler", None)
+		current_input = getattr(bih, "input", None) if bih else None
+		if bih and current_input and current_input != _hooked_braille_input:
+			_orig_braille_input = current_input
+			bih.input = _hooked_braille_input
 
 		try:
 			from gui.settingsDialogs import NVDASettingsDialog
 
-			NVDASettingsDialog.categoryClasses.append(AutoBrailleSettingsPanel)
+			if AutoBrailleSettingsPanel not in NVDASettingsDialog.categoryClasses:
+				NVDASettingsDialog.categoryClasses.append(AutoBrailleSettingsPanel)
 		except Exception:
 			log.warning("Auto Braille: could not register settings panel", exc_info=True)
 
@@ -447,14 +453,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def terminate(self) -> None:
 		global _orig_braille_input
 
-		louisHelper.translate = self._orig_translate
-		if _orig_braille_input:
-			brailleInput.BrailleInputHandler.input = _orig_braille_input
+		if hasattr(self, "_orig_translate") and louisHelper.translate == self._hooked_translate:
+			louisHelper.translate = self._orig_translate
+		bih = getattr(brailleInput, "BrailleInputHandler", None)
+		if _orig_braille_input and bih and getattr(bih, "input", None) == _hooked_braille_input:
+			bih.input = _orig_braille_input
 			_orig_braille_input = None
 		try:
 			from gui.settingsDialogs import NVDASettingsDialog
 
-			NVDASettingsDialog.categoryClasses.remove(AutoBrailleSettingsPanel)
+			if AutoBrailleSettingsPanel in NVDASettingsDialog.categoryClasses:
+				NVDASettingsDialog.categoryClasses.remove(AutoBrailleSettingsPanel)
 		except Exception:
 			pass
 		super().terminate()
@@ -624,9 +633,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			pass
 
 		if char and not char.isspace():
-			msg = _("{char}: {lang} ({table})").format(char=char, lang=script_name, table=table_disp)
+			msg = _("%s: %s (%s)") % (char, script_name, table_disp)
 		else:
-			msg = _("{lang} ({table})").format(lang=script_name, table=table_disp)
+			msg = _("%s (%s)") % (script_name, table_disp)
 
 		ui.message(msg)
 		if braille.handler:

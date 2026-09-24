@@ -28,6 +28,7 @@ jobs:
       - name: Run Test Suite
         shell: pwsh
         run: |
+          python tests/test_audit_fixes.py
           python tests/test_tables_mode.py
           python tests/test_features_3_4.py
           python tests/test_segmenter.py

@@ -8,6 +8,7 @@ on HIMS Braille Edge and other braille displays) with the active Windows keyboar
 from __future__ import annotations
 
 import ctypes
+from ctypes import wintypes
 from typing import Dict, List, Optional
 
 import api
@@ -18,9 +19,33 @@ from logHandler import log
 import ui
 
 try:
+	_ = _  # type: ignore
+except NameError:
+	try:
+		from addonHandler import initTranslation
+		initTranslation()
+	except Exception:
+		_ = lambda s: s
+
+try:
 	from . import scripts_data, translator
 except ImportError:
 	import scripts_data, translator
+
+# Configure explicit 64-bit ctypes prototypes for Windows user32 APIs
+try:
+	user32 = ctypes.windll.user32
+	user32.GetForegroundWindow.restype = wintypes.HWND
+	user32.GetForegroundWindow.argtypes = []
+
+	user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+	user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+
+	hkl_type = getattr(wintypes, "HKL", ctypes.c_void_p)
+	user32.GetKeyboardLayout.restype = hkl_type
+	user32.GetKeyboardLayout.argtypes = [wintypes.DWORD]
+except Exception:
+	user32 = getattr(ctypes.windll, "user32", None)
 
 LEGACY_INPUT_ENABLE_KEYS: Dict[str, str] = {
 	"arabic_persian": "enableArabicPersianInput",
@@ -53,16 +78,19 @@ def invalidate_cache() -> None:
 
 def get_foreground_keyboard_layout() -> int:
 	"""Retrieve the HKL keyboard layout identifier for the current foreground window thread."""
+	if not user32:
+		return 0
 	try:
-		hwnd = ctypes.windll.user32.GetForegroundWindow()
+		hwnd = user32.GetForegroundWindow()
 		if not hwnd:
 			return 0
-		pid = ctypes.c_ulong()
-		thread_id = ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+		pid = wintypes.DWORD()
+		thread_id = user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
 		if not thread_id:
 			return 0
-		hkl = ctypes.windll.user32.GetKeyboardLayout(thread_id)
-		return hkl & 0xFFFFFFFF
+		hkl = user32.GetKeyboardLayout(thread_id)
+		val = ctypes.cast(hkl, ctypes.c_void_p).value
+		return (val or 0) & 0xFFFFFFFF
 	except Exception:
 		return 0
 

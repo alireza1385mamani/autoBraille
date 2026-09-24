@@ -160,17 +160,30 @@ def segment_text(
 			gap_text = text[cur_end:next_start]
 			split_point = cur_end + len(gap_text) // 2
 
-			# Inspect neutral gap for natural punctuation or space boundaries
+			# Inspect neutral gap for natural punctuation, space boundaries, or atomic numbers
+			found = False
 			for idx, ch in enumerate(gap_text):
 				if ch in OPENING_PUNCT:
 					split_point = cur_end + idx
+					found = True
 					break
-				if ch in CLOSING_PUNCT:
-					split_point = cur_end + idx + 1
-					break
-				if ch == " ":
-					split_point = cur_end + idx + 1
-					break
+			if not found:
+				for idx in range(len(gap_text) - 1, -1, -1):
+					if gap_text[idx] in CLOSING_PUNCT:
+						split_point = cur_end + idx + 1
+						found = True
+						break
+			if not found:
+				space_idx = gap_text.find(" ")
+				if space_idx != -1:
+					split_point = cur_end + space_idx + 1
+					found = True
+			if not found and any(c.isdigit() for c in gap_text):
+				# Keep contiguous numbers together with the preceding script rather than splitting mid-digit
+				d_end = 0
+				while d_end < len(gap_text) and (gap_text[d_end].isdigit() or gap_text[d_end] in ".,"):
+					d_end += 1
+				split_point = cur_end + d_end
 
 			raw_spans.append((cur_end, split_point, cur_type))
 			raw_spans.append((split_point, next_start, next_type))

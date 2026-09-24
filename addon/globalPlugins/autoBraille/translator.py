@@ -47,11 +47,16 @@ _table_chain_cache: Dict[str, List[str]] = {}
 
 def resolve_table_path(table_name: str) -> str:
 	"""Resolve a table file name to an absolute file path registered in NVDA."""
+	if not table_name:
+		return ""
 	if table_name in _table_path_cache:
 		return _table_path_cache[table_name]
 
+	# Sanitize table_name to avoid path traversal
+	base_name = os.path.basename(table_name)
+
 	# Check NVDA built-in tables directory
-	path = os.path.join(brailleTables.TABLES_DIR, table_name)
+	path = os.path.join(brailleTables.TABLES_DIR, base_name)
 	if os.path.isfile(path):
 		_table_path_cache[table_name] = path
 		return path
@@ -59,7 +64,7 @@ def resolve_table_path(table_name: str) -> str:
 	# Check custom tables directories (NVDA 2024.3+)
 	if hasattr(brailleTables, "_tablesDirs"):
 		for directory in brailleTables._tablesDirs.values():
-			candidate = os.path.join(directory, table_name)
+			candidate = os.path.join(directory, base_name)
 			if os.path.isfile(candidate):
 				_table_path_cache[table_name] = candidate
 				return candidate
@@ -274,8 +279,13 @@ def multi_script_translate(
 		table = get_script_table_chain(seg_script, active_tables)
 		try:
 			cells, b2r, r2b, cur = original_translate(table, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
-			if tactile_marker == "dots78_secondary" and seg_script != primary_script:
-				cells = [c | 0xC0 for c in cells]
+			if cells and seg_script != primary_script:
+				if tactile_marker == "dot8_first":
+					cells = [cells[0] | 0x80] + cells[1:]
+				elif tactile_marker == "dot7_first":
+					cells = [cells[0] | 0x40] + cells[1:]
+				elif tactile_marker == "dots78_secondary":
+					cells = [c | 0xC0 for c in cells]
 			return cells, b2r, r2b, cur
 		except Exception:
 			return original_translate(active_tables, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
