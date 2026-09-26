@@ -43,6 +43,11 @@
 * **Dynamic Defaults for Non-Latin Primary Users:** If your NVDA primary translation table is Persian (`fa-ir-g1.utb`), Arabic (`ar-ar-g1.utb`), or Russian (`ru-litbrl.ctb`), Auto Braille automatically defaults its secondary table to English UEB out of the box!
 * **Specific Language Announcements:** Caret language announcements report the precise language name (e.g. "Persian", "Arabic", "English (Unified)", "French") rather than broad script categories.
 
+### 7. One-Click Setup Wizard (Auto-Detect Windows Keyboards)
+* **Instant Automatic Setup:** Click **Auto-Detect Keyboards...** in the settings panel to automatically scan your installed Windows keyboard layouts (e.g. Persian, Arabic, Russian, English, French, German).
+* **Smart Liblouis Mapping:** Auto Braille matches each keyboard to its recommended braille output table and Perkins input table, while preserving your primary language and eliminating duplicate entries.
+* **In-Place Customization:** An accessible preview dialog displays all detected keyboard languages. Select any item and click **Edit Table...** to customize its output or Perkins input table before applying!
+
 ---
 
 ## Configuration
@@ -59,7 +64,7 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 5. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
 6. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
 7. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
-8. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table (e.g. `fa-ir-g1.utb`, `en-ueb-g2.ctb`, `ru-litbrl.ctb`, `ar-ar-g1.utb`). Auto Braille automatically infers the script and pairs the matching Perkins input table.
+8. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages. Auto Braille automatically infers the script and pairs the matching Perkins input table.
 
 ---
 

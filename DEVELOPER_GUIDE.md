@@ -15,10 +15,11 @@ Welcome to the **Auto Braille** developer guide! This document provides an exhau
 7. [Deep Dive: Document Language Tag Integration](#7-deep-dive-document-language-tag-integration)
 8. [Deep Dive: Contracted Braille (Grade 2) & Boundary Guarding](#8-deep-dive-contracted-braille-grade-2--boundary-guarding)
 9. [Deep Dive: 3-Tier Multi-Language Architecture & Intra-Script Disambiguation](#9-deep-dive-3-tier-multi-language-architecture--intra-script-disambiguation)
-10. [Adding New Writing Systems & Liblouis Tables](#10-adding-new-writing-systems--liblouis-tables)
-11. [Localization & Internationalization (gettext)](#11-localization--internationalization-gettext)
-12. [Build System & Automated CI/CD](#12-build-system--automated-cicd)
-13. [Test Suites & Quality Assurance](#13-test-suites--quality-assurance)
+10. [Deep Dive: One-Click Setup Wizard & Windows Keyboard Detection](#10-deep-dive-one-click-setup-wizard--windows-keyboard-detection)
+11. [Adding New Writing Systems & Liblouis Tables](#11-adding-new-writing-systems--liblouis-tables)
+12. [Localization & Internationalization (gettext)](#12-localization--internationalization-gettext)
+13. [Build System & Automated CI/CD](#13-build-system--automated-cicd)
+14. [Test Suites & Quality Assurance](#14-test-suites--quality-assurance)
 
 ---
 
@@ -298,7 +299,37 @@ To distinguish between languages sharing the same script (e.g. Persian vs. Arabi
 
 ---
 
-## 10. Adding New Writing Systems & Liblouis Tables
+## 10. Deep Dive: One-Click Setup Wizard & Windows Keyboard Detection
+
+The One-Click Setup Wizard allows users to automatically discover all installed Windows keyboard languages and configure their optimal Liblouis braille output and Perkins input tables in a single step.
+
+### 1. In-Memory & Read-Only Detection Architecture
+Auto Braille implements a zero-attack-surface discovery pipeline:
+* **Primary (In-Memory Win32 API):** Uses `user32.GetKeyboardLayoutList()` to query active layouts directly from the window manager thread in RAM.
+  - Formally typed using 64-bit safe ctypes pointers (`hkl_type = getattr(wintypes, "HKL", ctypes.c_void_p)`).
+* **Secondary (Read-Only Registry Fallback):** Queries `HKEY_CURRENT_USER\Keyboard Layout\Preload` strictly with `winreg.KEY_READ`.
+  - Zero write access: cannot modify, inject, or tamper with the registry.
+  - Strict hex sanitization: each value is matched against `^[0-9a-fA-F]{1,8}$` and converted to `int(val, 16) & 0xFFFF`.
+
+### 2. 3-Tier Fallback Hierarchy & Deduplication
+To handle dozens of regional Windows dialects (e.g. UK vs US English; Saudi vs Egyptian Arabic):
+1. **Tier 1 (Exact LANGID):** `scripts_data.LANG_ID_TO_TABLE[lang_id]`
+2. **Tier 2 (Primary Language Mask):** `lang_id & 0x03FF` masks out dialect sub-languages, unifying all English dialects to `0x0009` and all Arabic dialects to `0x0001`.
+3. **Tier 3 (Script Family Registry):** `scripts_data.LANG_ID_TO_SCRIPT` maps remaining writing systems to their default output table.
+* **Deduplication:** Multiple installed variants of the same language are merged so only one candidate table is proposed.
+
+### 3. Primary Table Protection & Catalog Validation
+* The detected layout matching NVDA's active translation table is identified as the **Primary Language** and is never added to secondary candidates.
+* Every candidate is dynamically verified against `brailleTables.listTables()`. If a table is not installed in the user's NVDA version, compatible prefix fallbacks are checked, or the layout is noted in the preview dialog.
+
+### 4. Accessible Wizard Dialog (`AutoDetectWizardDialog`)
+* Renders a `wx.CheckListBox` with all detected candidate languages pre-checked.
+* Features an **Edit Table...** button opening `EditTableDialog` for any highlighted language, allowing the user to select Computer Braille or Grade 2 before applying.
+* Directly appends confirmed tables to the settings list and saves configuration.
+
+---
+
+## 11. Adding New Writing Systems & Liblouis Tables
 
 To register a new writing system, edit `addon/globalPlugins/autoBraille/scripts_data.py`:
 ```python
@@ -328,7 +359,7 @@ Auto Braille's dynamic configuration, GUI dialogs, table-to-script resolution, a
 
 ---
 
-## 11. Localization & Internationalization (gettext)
+## 12. Localization & Internationalization (gettext)
 
 Auto Braille strictly enforces NVDA Add-on Store standards for translatability:
 
@@ -346,14 +377,14 @@ Auto Braille includes a zero-dependency AST parser [generate_pot.py](file:///c:/
 ```bash
 py.exe generate_pot.py
 ```
-This generates `addon/locale/autoBraille.pot` with all 33+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
+This generates `addon/locale/autoBraille.pot` with all 44+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
 
 ### 3. Adding Translated PO Files
 Translators create `addon/locale/<lang>/LC_MESSAGES/autoBraille.po` using POEdit or standard gettext tools. During packaging, `build.py` automatically bundles all compiled catalogs.
 
 ---
 
-## 12. Build System & Automated CI/CD
+## 13. Build System & Automated CI/CD
 
 ### Building via Python (`build.py`)
 Auto Braille utilizes a standalone packaging script:
@@ -375,9 +406,9 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 
 ---
 
-## 13. Test Suites & Quality Assurance
+## 14. Test Suites & Quality Assurance
 
-Auto Braille features a comprehensive 6-suite offline testing framework requiring zero running NVDA instances:
+Auto Braille features a comprehensive 7-suite offline testing framework requiring zero running NVDA instances:
 
 | Suite | File Path | Focus Area |
 | :--- | :--- | :--- |
@@ -387,6 +418,7 @@ Auto Braille features a comprehensive 6-suite offline testing framework requirin
 | **Segmenter** | `tests/test_segmenter.py` | Unicode script segmentation across Persian, Russian, Hebrew, Greek, and English sentences with neutral gap absorption. |
 | **Intra-Script** | `tests/test_intra_script.py` | 3-tier language detection, exclusive lexical marker scoring (Persian vs Arabic, Ukrainian/Belarusian vs Russian, Urdu/Kurdish), n-gram frequency fallback, and document tag override. |
 | **Grade 2 Boundary** | `tests/test_grade2_boundary.py` | Contracted Braille companion mapping, boundary guarding for single-letter wordsigns (`b` -> `but` prevention), code identifiers (`user_id`), numeric boundaries (`123b`), and cursor routing offset preservation. |
+| **Auto-Detect Keyboards** | `tests/test_auto_detect_keyboards.py` | 64-bit safe `GetKeyboardLayoutList`, read-only registry sanitization, 3-tier dialect resolution, variant deduplication, primary table protection, Liblouis catalog validation, and wizard UI integration. |
 
 ### Running Unit Tests
 Execute individual suites using Python:
@@ -397,6 +429,7 @@ py.exe tests/test_doc_lang_and_tactile.py
 py.exe tests/test_segmenter.py
 py.exe tests/test_intra_script.py
 py.exe tests/test_grade2_boundary.py
+py.exe tests/test_auto_detect_keyboards.py
 ```
 Or run the complete suite automatically through `build.ps1 -RunTests`.
 

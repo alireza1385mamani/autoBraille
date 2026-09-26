@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: autoBraille 1.0.3\n"
 "Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\n"
-"POT-Creation-Date: 2026-09-26 12:20+0000\n"
+"POT-Creation-Date: 2026-09-26 13:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -31,11 +31,11 @@ msgstr ""
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
 #. Translators: Title of message box dialogs
 #: addon/globalPlugins/autoBraille/__init__.py:95
-#: addon/globalPlugins/autoBraille/__init__.py:456
-#: addon/globalPlugins/autoBraille/__init__.py:586
-#: addon/globalPlugins/autoBraille/__init__.py:602
-#: addon/globalPlugins/autoBraille/__init__.py:611
-#: addon/globalPlugins/autoBraille/__init__.py:351
+#: addon/globalPlugins/autoBraille/__init__.py:508
+#: addon/globalPlugins/autoBraille/__init__.py:638
+#: addon/globalPlugins/autoBraille/__init__.py:654
+#: addon/globalPlugins/autoBraille/__init__.py:663
+#: addon/globalPlugins/autoBraille/__init__.py:356
 msgid "Auto Braille"
 msgstr ""
 
@@ -54,28 +54,40 @@ msgstr ""
 msgid "Primary Perkins &input braille table:"
 msgstr ""
 
+#. Translators: Title of the auto-detect keyboards message box
+#. Translators: Title of the Auto-Detect Windows Keyboards setup wizard dialog
+#: addon/globalPlugins/autoBraille/__init__.py:398
+#: addon/globalPlugins/autoBraille/language_dialogs.py:247
+msgid "Auto-Detect Windows Keyboards"
+msgstr ""
+
+#. Translators: Message shown when no new keyboard languages are detected in Windows
+#: addon/globalPlugins/autoBraille/__init__.py:400
+msgid "No new Windows keyboard languages detected. All installed keyboard layouts are already configured or match your primary language."
+msgstr ""
+
 #. Translators: Announcement when Auto Braille translation is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:593
+#: addon/globalPlugins/autoBraille/__init__.py:645
 msgid "Auto Braille enabled"
 msgstr ""
 
 #. Translators: Announcement when Auto Braille translation is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:593
+#: addon/globalPlugins/autoBraille/__init__.py:645
 msgid "Auto Braille disabled"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:585
+#: addon/globalPlugins/autoBraille/__init__.py:637
 msgid "Toggles automatic universal multi-script braille translation on and off"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:601
+#: addon/globalPlugins/autoBraille/__init__.py:653
 msgid "Cycles or toggles Perkins braille keyboard input language"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:610
+#: addon/globalPlugins/autoBraille/__init__.py:662
 msgid "Announces the language and braille table at the caret or review cursor"
 msgstr ""
 
@@ -124,18 +136,23 @@ msgstr ""
 msgid "&Remove Table"
 msgstr ""
 
+#. Translators: Button to auto-detect installed Windows keyboard languages and configure matching braille tables
+#: addon/globalPlugins/autoBraille/__init__.py:281
+msgid "&Auto-Detect Keyboards..."
+msgstr ""
+
 #. Translators: Title of message box dialogs
-#: addon/globalPlugins/autoBraille/__init__.py:350
+#: addon/globalPlugins/autoBraille/__init__.py:355
 msgid "Please select a braille table from the list to configure."
 msgstr ""
 
 #. Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is language name, third %s is braille table)
-#: addon/globalPlugins/autoBraille/__init__.py:691
+#: addon/globalPlugins/autoBraille/__init__.py:743
 msgid "%s: %s (%s)"
 msgstr ""
 
 #. Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is language name, second %s is braille table)
-#: addon/globalPlugins/autoBraille/__init__.py:694
+#: addon/globalPlugins/autoBraille/__init__.py:746
 msgid "%s (%s)"
 msgstr ""
 
@@ -164,6 +181,11 @@ msgstr ""
 msgid "&Active Secondary Braille Tables (Auto-Detected):"
 msgstr ""
 
+#. Translators: Spoken feedback when tables are added via the auto-detect wizard
+#: addon/globalPlugins/autoBraille/__init__.py:429
+msgid "Added %d braille tables from Windows keyboards."
+msgstr ""
+
 #. Translators: Label for the output braille table choice in Add Secondary Braille Table dialog.
 #. Translators: Label for the output braille table choice in Configure Braille Table dialog.
 #: addon/globalPlugins/autoBraille/language_dialogs.py:93
@@ -178,9 +200,33 @@ msgstr ""
 msgid "Perkins &input braille table:"
 msgstr ""
 
+#: addon/globalPlugins/autoBraille/language_dialogs.py:258
+msgid "Primary"
+msgstr ""
+
+#. Translators: Label describing detected primary language in the auto-detect wizard
+#: addon/globalPlugins/autoBraille/language_dialogs.py:263
+msgid "Primary language (active): %s — %s"
+msgstr ""
+
+#. Translators: Label for the checklist of detected keyboard languages
+#: addon/globalPlugins/autoBraille/language_dialogs.py:275
+msgid "&Detected keyboard languages:"
+msgstr ""
+
 #. Translators: Title of the Add Table dialog
 #: addon/globalPlugins/autoBraille/language_dialogs.py:81
 msgid "Add Secondary Braille Table"
+msgstr ""
+
+#. Translators: Instructions above the list of detected secondary keyboards
+#: addon/globalPlugins/autoBraille/language_dialogs.py:268
+msgid "Select which detected keyboard languages to add to your active braille tables:"
+msgstr ""
+
+#. Translators: Button in setup wizard to customize the selected detected keyboard's braille table
+#: addon/globalPlugins/autoBraille/language_dialogs.py:287
+msgid "&Edit Table..."
 msgstr ""
 
 #. Translators: Title of the Edit Table dialog
@@ -188,7 +234,17 @@ msgstr ""
 msgid "Configure Braille Table — %s"
 msgstr ""
 
+#. Translators: Confirmation button in setup wizard to add selected tables
+#: addon/globalPlugins/autoBraille/language_dialogs.py:307
+msgid "&Add Selected Tables"
+msgstr ""
+
+#. Translators: Note shown in wizard when some detected keyboards have no matching Liblouis table in NVDA
+#: addon/globalPlugins/autoBraille/language_dialogs.py:298
+msgid "Note: No matching Liblouis braille table found in this NVDA installation for: %s"
+msgstr ""
+
 #. Translators: Announcement when input braille table is switched
-#: addon/globalPlugins/autoBraille/input_sync.py:335
+#: addon/globalPlugins/autoBraille/input_sync.py:516
 msgid "Braille input: %s"
 msgstr ""

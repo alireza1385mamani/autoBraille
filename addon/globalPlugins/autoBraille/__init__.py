@@ -35,7 +35,7 @@ import ui
 import wx
 
 from . import input_sync
-from .language_dialogs import AddTableDialog, EditTableDialog, AddLanguageDialog, EditLanguageDialog
+from .language_dialogs import AddTableDialog, EditTableDialog, AddLanguageDialog, EditLanguageDialog, AutoDetectWizardDialog
 from . import scripts_data
 from . import segmenter
 from . import translator
@@ -275,7 +275,12 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		# Translators: Button to remove the selected secondary braille table
 		self.removeButton = wx.Button(self, label=_("&Remove Table"))
 		self.removeButton.Bind(wx.EVT_BUTTON, self.onRemoveTable)
-		btn_sizer.Add(self.removeButton, 0)
+		btn_sizer.Add(self.removeButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to auto-detect installed Windows keyboard languages and configure matching braille tables
+		self.autoDetectButton = wx.Button(self, label=_("&Auto-Detect Keyboards..."))
+		self.autoDetectButton.Bind(wx.EVT_BUTTON, self.onAutoDetectKeyboards)
+		btn_sizer.Add(self.autoDetectButton, 0)
 
 		sHelper.addItem(btn_sizer)
 
@@ -376,6 +381,53 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		self.active_items.pop(sel)
 		new_sel = min(sel, len(self.active_items) - 1)
 		self.refreshTablesList(select_idx=new_sel)
+
+	def onAutoDetectKeyboards(self, event: wx.Event) -> None:
+		prim_file = self.selectedPrimaryOutTable()
+		existing_files = [item["out_table"] for item in self.active_items]
+		detection = input_sync.detect_keyboard_tables(
+			available_output_tables=self.available_output_tables,
+			available_input_tables=self.available_input_tables,
+			primary_table=prim_file,
+			existing_tables=existing_files,
+		)
+
+		new_candidates = detection.get("new_candidates", [])
+		if not new_candidates:
+			# Translators: Title of the auto-detect keyboards message box
+			title = _("Auto-Detect Windows Keyboards")
+			# Translators: Message shown when no new keyboard languages are detected in Windows
+			msg = _("No new Windows keyboard languages detected. All installed keyboard layouts are already configured or match your primary language.")
+			gui.messageBox(msg, title, wx.OK | wx.ICON_INFORMATION, self)
+			return
+
+		dlg = AutoDetectWizardDialog(
+			self,
+			detection,
+			self.available_output_tables,
+			self.available_input_tables,
+		)
+		if dlg.ShowModal() == wx.ID_OK:
+			selected_tables = dlg.get_selected_tables()
+			if selected_tables:
+				added_count = 0
+				for out_tbl, inp_tbl in selected_tables:
+					found = False
+					for item in self.active_items:
+						if item["out_table"] == out_tbl:
+							item["inp_table"] = inp_tbl
+							found = True
+							break
+					if not found:
+						self.active_items.append({
+							"out_table": out_tbl,
+							"inp_table": inp_tbl,
+						})
+						added_count += 1
+				self.refreshTablesList(select_idx=len(self.active_items) - 1)
+				# Translators: Spoken feedback when tables are added via the auto-detect wizard
+				ui.message(_("Added %d braille tables from Windows keyboards.") % added_count)
+		dlg.Destroy()
 
 	def onSave(self) -> None:
 		cfg = config.conf["autoBraille"]

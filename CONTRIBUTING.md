@@ -51,6 +51,7 @@ Please maintain a respectful, welcoming, and inclusive environment for all contr
    py.exe tests/test_segmenter.py
    py.exe tests/test_intra_script.py
    py.exe tests/test_grade2_boundary.py
+   py.exe tests/test_auto_detect_keyboards.py
    ```
    Or run all tests with the PowerShell build script:
    ```powershell

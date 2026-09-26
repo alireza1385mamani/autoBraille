@@ -44,6 +44,9 @@ try:
 	hkl_type = getattr(wintypes, "HKL", ctypes.c_void_p)
 	user32.GetKeyboardLayout.restype = hkl_type
 	user32.GetKeyboardLayout.argtypes = [wintypes.DWORD]
+
+	user32.GetKeyboardLayoutList.restype = wintypes.INT
+	user32.GetKeyboardLayoutList.argtypes = [wintypes.INT, ctypes.POINTER(hkl_type)]
 except Exception:
 	user32 = getattr(ctypes.windll, "user32", None)
 
@@ -99,6 +102,184 @@ def get_current_input_lang_id() -> int:
 	"""Return the active 16-bit LANGID (language identifier) of the focused application."""
 	hkl = get_foreground_keyboard_layout()
 	return hkl & 0xFFFF
+
+
+def get_installed_system_keyboard_layouts() -> List[int]:
+	"""Retrieve all unique 16-bit LANGIDs for keyboard layouts installed on the system.
+
+	Uses 64-bit safe GetKeyboardLayoutList as primary in-memory source,
+	and safely reads HKCU\\Keyboard Layout\\Preload as a read-only fallback.
+	"""
+	lang_ids: List[int] = []
+	seen = set()
+
+	# 1. Primary in-memory detection via Win32 GetKeyboardLayoutList
+	if user32 and hasattr(user32, "GetKeyboardLayoutList"):
+		try:
+			count = user32.GetKeyboardLayoutList(0, None)
+			if count > 0:
+				hkl_type = getattr(wintypes, "HKL", ctypes.c_void_p)
+				hkls = (hkl_type * count)()
+				ret = user32.GetKeyboardLayoutList(count, hkls)
+				for i in range(ret):
+					val = ctypes.cast(hkls[i], ctypes.c_void_p).value
+					if val:
+						lid = val & 0xFFFF
+						if lid and lid not in seen:
+							seen.add(lid)
+							lang_ids.append(lid)
+		except Exception as e:
+			log.debug(f"AutoBraille: GetKeyboardLayoutList failed: {e}")
+
+	# 2. Secondary read-only fallback via Windows Registry Preload
+	try:
+		import winreg
+		import re
+		hex_pat = re.compile(r"^[0-9a-fA-F]{1,8}$")
+		with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Keyboard Layout\Preload", 0, winreg.KEY_READ) as key:
+			idx = 0
+			while True:
+				try:
+					val_name, val_data, _ = winreg.EnumValue(key, idx)
+					idx += 1
+					if isinstance(val_data, str) and hex_pat.match(val_data):
+						lid = int(val_data, 16) & 0xFFFF
+						if lid and lid not in seen:
+							seen.add(lid)
+							lang_ids.append(lid)
+				except OSError:
+					break
+	except Exception:
+		pass
+
+	return lang_ids
+
+
+def get_keyboard_language_name(lang_id: int) -> str:
+	"""Return a friendly language name for a Windows LANGID."""
+	try:
+		kernel32 = getattr(ctypes.windll, "kernel32", None)
+		if kernel32:
+			buf = ctypes.create_unicode_buffer(128)
+			# 0x0002 = LOCALE_SLOCALIZEDLANGUAGENAME
+			ret = kernel32.GetLocaleInfoW(lang_id, 0x0002, buf, 128)
+			if ret > 0 and buf.value.strip():
+				return buf.value.strip()
+			# 0x1001 = LOCALE_SENGLANGUAGENAME
+			ret = kernel32.GetLocaleInfoW(lang_id, 0x1001, buf, 128)
+			if ret > 0 and buf.value.strip():
+				return buf.value.strip()
+	except Exception:
+		pass
+
+	tbl = scripts_data.LANG_ID_TO_TABLE.get(lang_id) or scripts_data.LANG_ID_TO_TABLE.get(lang_id & 0x03FF)
+	if tbl:
+		return scripts_data.get_language_name_for_table(tbl)
+
+	script_id = scripts_data.LANG_ID_TO_SCRIPT.get(lang_id) or scripts_data.LANG_ID_TO_SCRIPT.get(lang_id & 0x03FF)
+	if script_id:
+		s_info = scripts_data.get_script_info(script_id)
+		if s_info:
+			return s_info.name
+
+	return f"Language (0x{lang_id:04X})"
+
+
+def detect_keyboard_tables(
+	available_output_tables: Optional[List[Any]] = None,
+	available_input_tables: Optional[List[Any]] = None,
+	primary_table: Optional[str] = None,
+	existing_tables: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+	"""Detect installed Windows keyboards and resolve to candidate Liblouis tables."""
+	if primary_table is None or primary_table == "auto":
+		primary_table = translator.get_primary_table()
+	primary_script = translator.get_primary_script()
+
+	if existing_tables is None:
+		existing_tables = translator.get_active_secondary_tables()
+	existing_set = set(existing_tables)
+
+	detected_lids = get_installed_system_keyboard_layouts()
+	if not detected_lids:
+		cur_lid = get_current_input_lang_id()
+		if cur_lid:
+			detected_lids = [cur_lid]
+
+	primary_lid = None
+	primary_name = scripts_data.get_language_name_for_table(primary_table)
+
+	new_candidates: List[Dict[str, Any]] = []
+	unsupported_layouts: List[Dict[str, Any]] = []
+	seen_out_tables = set(existing_tables)
+	seen_out_tables.add(primary_table)
+
+	# 1. Identify which detected layout matches Primary Table
+	for lid in detected_lids:
+		mapped_tbl = scripts_data.LANG_ID_TO_TABLE.get(lid) or scripts_data.LANG_ID_TO_TABLE.get(lid & 0x03FF)
+		mapped_script = scripts_data.LANG_ID_TO_SCRIPT.get(lid) or scripts_data.LANG_ID_TO_SCRIPT.get(lid & 0x03FF)
+		if mapped_tbl == primary_table or (mapped_script and mapped_script == primary_script):
+			primary_lid = lid
+			primary_name = get_keyboard_language_name(lid)
+			break
+
+	if primary_lid is None and detected_lids:
+		primary_lid = detected_lids[0]
+
+	# 2. Process secondary candidates
+	for lid in detected_lids:
+		lang_name = get_keyboard_language_name(lid)
+
+		# Skip if it is the primary language layout
+		if lid == primary_lid:
+			continue
+
+		# 3-Tier table resolution
+		cand_tbl = scripts_data.LANG_ID_TO_TABLE.get(lid)
+		if not cand_tbl:
+			cand_tbl = scripts_data.LANG_ID_TO_TABLE.get(lid & 0x03FF)
+		cand_script = scripts_data.LANG_ID_TO_SCRIPT.get(lid) or scripts_data.LANG_ID_TO_SCRIPT.get(lid & 0x03FF)
+		if not cand_tbl and cand_script:
+			s_info = scripts_data.get_script_info(cand_script)
+			if s_info:
+				cand_tbl = s_info.default_output_table
+
+		if not cand_tbl:
+			unsupported_layouts.append({"lang_id": lid, "lang_name": lang_name})
+			continue
+
+		# Validate against available Liblouis catalog
+		valid_out = scripts_data.validate_table_available(cand_tbl, available_output_tables)
+		if not valid_out:
+			unsupported_layouts.append({"lang_id": lid, "lang_name": lang_name})
+			continue
+
+		# Check if already configured or duplicate
+		if valid_out in seen_out_tables:
+			continue
+
+		# Resolve matching Perkins input table
+		inp_tbl = scripts_data.find_best_input_table(valid_out, available_input_tables)
+
+		seen_out_tables.add(valid_out)
+		new_candidates.append({
+			"lang_id": lid,
+			"lang_name": lang_name,
+			"out_table": valid_out,
+			"in_table": inp_tbl,
+			"script_id": cand_script or scripts_data.resolve_table_to_script(valid_out).id,
+		})
+
+	return {
+		"primary_info": {
+			"lang_id": primary_lid,
+			"lang_name": primary_name,
+			"table": primary_table,
+		},
+		"new_candidates": new_candidates,
+		"existing_tables": list(existing_tables),
+		"unsupported_layouts": unsupported_layouts,
+	}
 
 
 def resolve_concrete_table_name(table_name: str, is_input: bool = True) -> str:

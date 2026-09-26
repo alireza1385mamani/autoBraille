@@ -34,6 +34,7 @@ jobs:
           python tests/test_segmenter.py
           python tests/test_intra_script.py
           python tests/test_grade2_boundary.py
+          python tests/test_auto_detect_keyboards.py
 
   build:
     name: Build .nvda-addon Package

@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Solved intra-script conflicts for shared scripts (Persian vs Arabic in Arabic script, Ukrainian/Belarusian vs Russian in Cyrillic, Urdu/Kurdish).
   - Implemented 3-tier disambiguation: Document tags (Tier 1) &rarr; Exclusive lexical marker scoring (Tier 2) &rarr; Character n-gram frequency fallback (Tier 3).
   - Added dedicated test suite `tests/test_intra_script.py`.
+- **One-Click Setup Wizard (Auto-Detect Windows Keyboards)**:
+  - Added automatic in-memory Win32 detection (`GetKeyboardLayoutList`) and read-only registry preload discovery (`HKCU\Keyboard Layout\Preload`) with strict hex validation.
+  - Implemented 3-tier dialect fallback and automatic deduplication across regional Windows keyboard layouts (e.g. US/UK English, Saudi/Egyptian Arabic).
+  - Preserves user primary language and filters out already-configured tables.
+  - Added accessible `AutoDetectWizardDialog` with an **"Edit Table..."** button allowing users to customize candidate output and Perkins input tables before adding them.
+  - Added `tests/test_auto_detect_keyboards.py` unit test suite covering 64-bit ctypes prototypes, registry security, dialect deduplication, catalog validation, and UI lifecycle.
 
 ### Changed
 - **Developer Test Suite Renaming**: Renamed legacy test file `tests/test_features_3_4.py` to `tests/test_doc_lang_and_tactile.py` for clarity, self-documentation, and maintainability across the testing pipeline, CI workflows, and developer documentation.

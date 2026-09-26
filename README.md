@@ -75,15 +75,20 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 | | Unified English Braille Grade 2 (en-ueb-g2.ctb)  —  Input: UEB Grade 2      | |
 | | Russian literary braille (ru-litbrl.ctb)  —  Input: Russian literary        | |
 | +-----------------------------------------------------------------------------+ |
-| [&Add Table...]   [&Configure Table...]   [&Remove Table]                       |
+| [&Add Table...]   [&Configure Table...]   [&Remove Table]   [&Auto-Detect...]   |
 +---------------------------------------------------------------------------------+
 ```
 
 ### Adding a Secondary Table
-1. Click **Add Table...**.
-2. Select any Liblouis braille table (e.g., `fa-ir-g1.utb`, `en-ueb-g2.ctb`, `ru-litbrl.ctb`, `ar-ar-g1.utb`).
+1. Click **Add Table...** or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages.
+2. If adding manually, select any Liblouis braille table (e.g., `fa-ir-g1.utb`, `en-ueb-g2.ctb`, `ru-litbrl.ctb`, `ar-ar-g1.utb`).
 3. Auto Braille automatically infers the script, pairs the matching Perkins input table, and configures companion table fallback.
 4. Click **OK** &mdash; that's it!
+
+### ⚡ One-Click Setup Wizard (Auto-Detect Windows Keyboards)
+* **Instant Automatic Configuration:** Click **Auto-Detect Keyboards...** in settings to scan Windows for all installed keyboard languages (e.g. Persian, Arabic, Russian, English, French, German).
+* **Smart Liblouis Mapping:** Auto Braille resolves each layout to its optimal braille output table and Perkins input table, while preserving your primary language and preventing duplicate entries.
+* **Preview & In-Place Customization:** An accessible preview dialog displays all detected languages. Highlight any language and click **Edit Table...** to customize its output or Perkins input table before applying!
 
 ### 🌟 Contracted Braille (Grade 2) & Boundary Guarding
 * **No Accidental Contractions:** In UEB Grade 2, isolated single letters contract to whole words (`b` = "but", `c` = "can", `x` = "it"). Auto Braille automatically guards single letters in mixed text (e.g. `گزینه b`, `کلید c`), routing them through uncontracted Grade 1 companion tables so words like `but` never appear by mistake!
@@ -134,7 +139,7 @@ Or with PowerShell on Windows:
 
 ### Running Automated Tests
 
-Run the complete 6-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, and Grade 2 boundary guarding:
+Run the complete 7-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, and Windows keyboard auto-detection:
 ```bash
 py.exe tests/test_audit_fixes.py
 py.exe tests/test_tables_mode.py
@@ -142,6 +147,7 @@ py.exe tests/test_doc_lang_and_tactile.py
 py.exe tests/test_segmenter.py
 py.exe tests/test_intra_script.py
 py.exe tests/test_grade2_boundary.py
+py.exe tests/test_auto_detect_keyboards.py
 ```
 Or run all tests with the PowerShell build script:
 ```powershell

@@ -495,12 +495,110 @@ LANG_ID_TO_TABLE: Dict[int, str] = {
 	0x0408: "el.ctb",
 	# Hindi
 	0x0439: "hi-in-g1.utb",
+	# Turkish
+	0x041F: "tr-g1.ctb",
+	# Polish
+	0x0415: "pl-pl-g1.utb",
+	# Swedish
+	0x041D: "sv-1989.ctb",
+	# Dutch
+	0x0413: "nl-g1.ctb",
+	# Danish
+	0x0406: "da-g1.ctb",
+	# Norwegian
+	0x0414: "no-g1.ctb",
+	# Finnish
+	0x040B: "fi-g1.ctb",
+	# Czech
+	0x0405: "cs-g1.ctb",
+	# Hungarian
+	0x040E: "hu-hu-g1.ctb",
+	# Romanian
+	0x0418: "ro-g1.ctb",
+	# Chinese
+	0x0804: "zhcn-g1.ctb",
+	0x0404: "zhcn-g1.ctb",
+	# Japanese
+	0x0411: "ja-kantenji.utb",
+	# Korean
+	0x0412: "ko-g1.ctb",
+	# Thai
+	0x041E: "th-g1.utb",
+	# Vietnamese
+	0x042A: "vi-g1.ctb",
+	# Sinhala
+	0x045B: "sin-in-g1.utb",
+	# Armenian
+	0x042B: "hy.ctb",
+	# Georgian
+	0x0437: "ka.utb",
 }
 # Map primary language IDs (low 10 bits) for LANG_ID_TO_TABLE as well
 for _lid, _tbl in list(LANG_ID_TO_TABLE.items()):
 	_prim = _lid & 0x03FF
 	if _prim not in LANG_ID_TO_TABLE:
 		LANG_ID_TO_TABLE[_prim] = _tbl
+
+
+def validate_table_available(table_name: str, available_tables: Optional[List[Any]] = None) -> str:
+	"""Validate that table_name exists in available_tables, or find a compatible fallback."""
+	if not table_name:
+		return ""
+	if not available_tables:
+		return table_name
+
+	avail_names = {getattr(t, "fileName", str(t)): t for t in available_tables}
+	if table_name in avail_names:
+		return table_name
+
+	# Try finding by prefix
+	base = os.path.basename(table_name).lower()
+	prefix = base.split("-")[0].split(".")[0]
+	for fn in avail_names:
+		if fn.lower().startswith(prefix):
+			return fn
+
+	s_info = resolve_table_to_script(table_name)
+	if s_info:
+		for p in s_info.table_prefixes:
+			for fn in avail_names:
+				if fn.lower().startswith(p.lower()):
+					return fn
+
+	return ""
+
+
+def find_best_input_table(out_table_file: str, available_input: Optional[List[Any]] = None) -> str:
+	"""Find the best matching Perkins input table for a given output table."""
+	if not available_input:
+		s_info = resolve_table_to_script(out_table_file)
+		return s_info.default_input_table if s_info else out_table_file
+
+	# 1. Exact match in input list
+	for t in available_input:
+		fn = getattr(t, "fileName", str(t))
+		if fn == out_table_file:
+			return fn
+
+	# 2. Script default input table
+	s_info = resolve_table_to_script(out_table_file)
+	if s_info:
+		target_inp = s_info.default_input_table
+		for t in available_input:
+			fn = getattr(t, "fileName", str(t))
+			if fn == target_inp:
+				return fn
+		for p in s_info.table_prefixes:
+			for t in available_input:
+				fn = getattr(t, "fileName", str(t))
+				if fn.lower().startswith(p.lower()):
+					return fn
+
+	# 3. Fallback to first available or output table
+	if available_input:
+		return getattr(available_input[0], "fileName", str(available_input[0]))
+	return out_table_file
+
 
 
 
