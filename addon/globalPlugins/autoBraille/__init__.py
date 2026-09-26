@@ -234,7 +234,7 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 						tbl = info.default_output_table if info else "fa-ir-g1.utb"
 					table_files.append(tbl)
 			else:
-				table_files = ["fa-ir-g1.utb"]
+				table_files = translator.get_active_secondary_tables()
 
 		for tbl in table_files:
 			s_info = scripts_data.resolve_table_to_script(tbl)
@@ -544,8 +544,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		tactile_marker = config.conf.get("autoBraille", {}).get("tactileMarker", "none")
 
-		# Fast check: If text contains no characters belonging to any enabled secondary script, no doc spans, and no tactile markers
-		if not doc_spans and tactile_marker == "none" and not segmenter.has_secondary_scripts(inbuf, secondary_scripts):
+		has_multiple_primary = len(translator.get_candidate_tables_for_script(primary_script, tableList)) > 1
+
+		# Fast check: If text contains no characters belonging to any enabled secondary script, no doc spans, no multiple primary tables, and no tactile markers
+		if not has_multiple_primary and not doc_spans and tactile_marker == "none" and not segmenter.has_secondary_scripts(inbuf, secondary_scripts):
 			primary_tbl = config.conf.get("autoBraille", {}).get("primaryTable", "auto")
 			if primary_tbl and primary_tbl != "auto":
 				chain = translator.get_table_chain_for_file(primary_tbl)
@@ -637,10 +639,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# 3. Resolve script and table
 		s_info = None
+		specific_table = None
 		if doc_lang and config.conf.get("autoBraille", {}).get("honorDocumentLang", True):
 			resolved = scripts_data.resolve_doc_lang_to_script(doc_lang)
 			if resolved and (not char or scripts_data.is_script_compatible(char, resolved.id)):
 				s_info = resolved
+				specific_table = scripts_data.resolve_doc_lang_to_table(doc_lang)
 
 		if not s_info:
 			if char:
@@ -651,8 +655,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not s_info:
 			s_info = scripts_data.get_script_info("latin")
 
-		script_name = s_info.name if s_info else "Latin"
-		table_chain = translator.get_script_table_chain(s_info.id if s_info else "latin", [])
+		table_chain = translator.get_script_table_chain(
+			s_info.id if s_info else "latin",
+			[],
+			text_sample=char,
+			doc_table=specific_table,
+		)
 		table_file = os.path.basename(table_chain[0]) if table_chain else "en-ueb-g1.ctb"
 
 		table_disp = table_file
@@ -664,12 +672,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except Exception:
 			pass
 
-		# Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is script name, third %s is braille table)
+		# Get concise, specific language name (e.g. 'Persian', 'Arabic', 'English (Unified)', 'French')
+		lang_name = scripts_data.get_language_name_for_table(table_file, table_disp)
+
+		# Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is language name, third %s is braille table)
 		if char and not char.isspace():
-			msg = _("%s: %s (%s)") % (char, script_name, table_disp)
+			msg = _("%s: %s (%s)") % (char, lang_name, table_disp)
 		else:
-			# Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is script name, second %s is braille table)
-			msg = _("%s (%s)") % (script_name, table_disp)
+			# Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is language name, second %s is braille table)
+			msg = _("%s (%s)") % (lang_name, table_disp)
 
 		ui.message(msg)
 		if braille.handler:

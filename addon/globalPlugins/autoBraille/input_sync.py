@@ -125,9 +125,34 @@ def resolve_concrete_table_name(table_name: str, is_input: bool = True) -> str:
 def resolve_input_table_for_lang(lang_id: int) -> str:
 	"""Map a Windows LANGID to the appropriate configured braille input table."""
 	cfg = config.conf.get("autoBraille", {})
+	primary_tbl = translator.get_primary_table()
 	primary_script = translator.get_primary_script()
+	sec_tables = translator.get_active_secondary_tables()
 
-	# Check full LANGID first, then primary language ID (low 10 bits)
+	# 1. First check if exact LANGID or primary language has an intra-script table mapping
+	exact_tbl = scripts_data.LANG_ID_TO_TABLE.get(lang_id)
+	if not exact_tbl:
+		exact_tbl = scripts_data.LANG_ID_TO_TABLE.get(lang_id & 0x03FF)
+
+	if exact_tbl:
+		# If it matches primary table, return primary input table
+		if exact_tbl == primary_tbl or exact_tbl.split("-")[0] == primary_tbl.split("-")[0]:
+			primary_configured = cfg.get("primaryInputTable", "auto")
+			if not primary_configured or primary_configured == "auto":
+				info = scripts_data.get_script_info(primary_script)
+				fallback = info.default_input_table if info else exact_tbl
+				return resolve_concrete_table_name(fallback, is_input=True)
+			return resolve_concrete_table_name(primary_configured, is_input=True)
+
+		# If it matches an active secondary table, use that table's input mapping
+		for tbl in sec_tables:
+			if tbl == exact_tbl or tbl.split("-")[0] == exact_tbl.split("-")[0]:
+				inp_tbl = cfg.get(f"inputTable_{tbl}")
+				if not inp_tbl or inp_tbl == "auto":
+					inp_tbl = tbl
+				return resolve_concrete_table_name(inp_tbl, is_input=True)
+
+	# 2. Check script ID level mapping
 	script_id = scripts_data.LANG_ID_TO_SCRIPT.get(lang_id)
 	if not script_id:
 		primary_lang = lang_id & 0x03FF
@@ -144,16 +169,13 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 
 	# If layout matches a secondary script, check active secondary tables
 	if script_id:
-		raw_tables = cfg.get("activeTables")
-		if raw_tables:
-			sec_tables = [t.strip() for t in raw_tables.split(",") if t.strip()] if isinstance(raw_tables, str) else list(raw_tables)
-			for tbl in sec_tables:
-				s_info = scripts_data.resolve_table_to_script(tbl)
-				if s_info and s_info.id == script_id:
-					inp_tbl = cfg.get(f"inputTable_{tbl}")
-					if not inp_tbl or inp_tbl == "auto":
-						inp_tbl = s_info.default_input_table
-					return resolve_concrete_table_name(inp_tbl, is_input=True)
+		for tbl in sec_tables:
+			s_info = scripts_data.resolve_table_to_script(tbl)
+			if s_info and s_info.id == script_id:
+				inp_tbl = cfg.get(f"inputTable_{tbl}")
+				if not inp_tbl or inp_tbl == "auto":
+					inp_tbl = tbl
+				return resolve_concrete_table_name(inp_tbl, is_input=True)
 
 		# Fallback to legacy activeLanguages
 		raw_active = cfg.get("activeLanguages")

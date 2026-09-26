@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple
 
 
 class ScriptInfo(NamedTuple):
@@ -434,6 +434,75 @@ for s in SCRIPTS:
 		if primary not in LANG_ID_TO_SCRIPT:
 			LANG_ID_TO_SCRIPT[primary] = s.id
 
+LANG_ID_TO_TABLE: Dict[int, str] = {
+	# Persian
+	0x0429: "fa-ir-g1.utb",
+	# Arabic
+	0x0401: "ar-ar-g1.utb",
+	0x0801: "ar-ar-g1.utb",
+	0x0C01: "ar-ar-g1.utb",
+	0x1001: "ar-ar-g1.utb",
+	0x1401: "ar-ar-g1.utb",
+	0x1801: "ar-ar-g1.utb",
+	0x1C01: "ar-ar-g1.utb",
+	0x2001: "ar-ar-g1.utb",
+	0x2401: "ar-ar-g1.utb",
+	0x2801: "ar-ar-g1.utb",
+	0x2C01: "ar-ar-g1.utb",
+	0x3001: "ar-ar-g1.utb",
+	0x3401: "ar-ar-g1.utb",
+	0x3801: "ar-ar-g1.utb",
+	0x3C01: "ar-ar-g1.utb",
+	0x4001: "ar-ar-g1.utb",
+	# Urdu
+	0x0420: "ur-pk-g1.utb",
+	# Kurdish
+	0x0492: "ckb.ctb",
+	# English
+	0x0409: "en-ueb-g1.ctb",
+	0x0809: "en-ueb-g1.ctb",
+	0x0C09: "en-ueb-g1.ctb",
+	0x1009: "en-ueb-g1.ctb",
+	0x1409: "en-ueb-g1.ctb",
+	0x1809: "en-ueb-g1.ctb",
+	0x1C09: "en-ueb-g1.ctb",
+	0x2009: "en-ueb-g1.ctb",
+	# French
+	0x040C: "fr-bfu-comp8.ctb",
+	0x080C: "fr-bfu-comp8.ctb",
+	0x0C0C: "fr-bfu-comp8.ctb",
+	0x100C: "fr-bfu-comp8.ctb",
+	# German
+	0x0407: "de-g1.ctb",
+	0x0807: "de-g1.ctb",
+	0x0C07: "de-g1.ctb",
+	# Spanish
+	0x040A: "es-g1.ctb",
+	0x080A: "es-g1.ctb",
+	0x0C0A: "es-g1.ctb",
+	# Italian
+	0x0410: "it-it-g1.utb",
+	# Portuguese
+	0x0816: "pt-pt-g1.utb",
+	0x0416: "pt-pt-g1.utb",
+	# Russian
+	0x0419: "ru-litbrl.ctb",
+	# Ukrainian
+	0x0422: "uk.utb",
+	# Hebrew
+	0x040D: "he-IL.utb",
+	# Greek
+	0x0408: "el.ctb",
+	# Hindi
+	0x0439: "hi-in-g1.utb",
+}
+# Map primary language IDs (low 10 bits) for LANG_ID_TO_TABLE as well
+for _lid, _tbl in list(LANG_ID_TO_TABLE.items()):
+	_prim = _lid & 0x03FF
+	if _prim not in LANG_ID_TO_TABLE:
+		LANG_ID_TO_TABLE[_prim] = _tbl
+
+
 
 def get_scripts_in_family(family_id: str) -> List[ScriptInfo]:
 	"""Return all scripts belonging to the specified family."""
@@ -699,5 +768,264 @@ def get_script_for_char(char: str) -> Optional[ScriptInfo]:
 		if pat and pat.search(char):
 			return s
 	return SCRIPT_REGISTRY.get("latin")
+
+
+DOC_LANG_TABLE_MAP: Dict[str, str] = {
+	# Middle Eastern
+	"fa": "fa-ir-g1.utb",
+	"per": "fa-ir-g1.utb",
+	"fas": "fa-ir-g1.utb",
+	"ar": "ar-ar-g1.utb",
+	"ara": "ar-ar-g1.utb",
+	"ur": "ur-pk-g1.utb",
+	"urd": "ur-pk-g1.utb",
+	"ckb": "ckb.ctb",
+	"ku": "ckb.ctb",
+	"he": "he-IL.utb",
+	"heb": "he-IL.utb",
+	"yi": "yi.utb",
+	"yid": "yi.utb",
+	"syc": "syc.utb",
+	# Cyrillic
+	"ru": "ru-litbrl.ctb",
+	"rus": "ru-litbrl.ctb",
+	"uk": "uk.utb",
+	"ukr": "uk.utb",
+	"be": "bel.utb",
+	"bel": "bel.utb",
+	"bg": "bg.ctb",
+	"bul": "bg.ctb",
+	"sr": "sr-Cyrl.ctb",
+	"srp": "sr-Cyrl.ctb",
+	"mk": "mk.ctb",
+	"mkd": "mk.ctb",
+	"kk": "kk.utb",
+	"kaz": "kk.utb",
+	"tt": "tt.utb",
+	# Greek
+	"el": "el.ctb",
+	"ell": "el.ctb",
+	"gre": "el.ctb",
+	"grc": "grc-international-common.uti",
+	# Latin / European
+	"en": "en-ueb-g1.ctb",
+	"eng": "en-ueb-g1.ctb",
+	"fr": "fr-bfu-comp8.ctb",
+	"fra": "fr-bfu-comp8.ctb",
+	"fre": "fr-bfu-comp8.ctb",
+	"de": "de-g1.ctb",
+	"deu": "de-g1.ctb",
+	"ger": "de-g1.ctb",
+	"es": "es-g1.ctb",
+	"spa": "es-g1.ctb",
+	"it": "it-it-g1.utb",
+	"ita": "it-it-g1.utb",
+	"pt": "pt-pt-g1.utb",
+	"por": "pt-pt-g1.utb",
+	"nl": "nl-NL-g1.ctb",
+	"nld": "nl-NL-g1.ctb",
+	"sv": "sv-1989.ctb",
+	"swe": "sv-1989.ctb",
+	"no": "no-no-8dot.ctb",
+	"nor": "no-no-8dot.ctb",
+	"da": "da-dk-g1.ctb",
+	"dan": "da-dk-g1.ctb",
+	"fi": "fi.utb",
+	"fin": "fi.utb",
+	"pl": "pl-pl-comp8.ctb",
+	"pol": "pl-pl-comp8.ctb",
+	"cs": "cs-g1.ctb",
+	"ces": "cs-g1.ctb",
+	"sk": "sk-g1.ctb",
+	"slk": "sk-g1.ctb",
+	"tr": "tr.ctb",
+	"tur": "tr.ctb",
+	"ro": "ro.ctb",
+	"ron": "ro.ctb",
+	"hu": "hu-hu-comp8.ctb",
+	"hun": "hu-hu-comp8.ctb",
+	"hr": "hr-g1.ctb",
+	"sl": "sl-g1.ctb",
+	# Indic
+	"hi": "hi-in-g1.utb",
+	"hin": "hi-in-g1.utb",
+	"mr": "mr-in-g1.utb",
+	"ne": "np-in-g1.utb",
+	"sa": "sa-in-g1.utb",
+	"bn": "be-in-g1.utb",
+	"pa": "pu-in-g1.utb",
+	"gu": "gu-in-g1.utb",
+	"ta": "ta-ta-g1.ctb",
+	"te": "te-in-g1.utb",
+	"kn": "ka-in-g1.utb",
+	"ml": "ml-in-g1.utb",
+	"si": "si-in-g1.utb",
+}
+
+
+def resolve_doc_lang_to_table(doc_lang: str) -> Optional[str]:
+	"""Resolve BCP-47 / ISO language tag directly to a concrete braille table filename."""
+	if not doc_lang:
+		return None
+	clean = doc_lang.strip().lower().replace("_", "-")
+	if clean in DOC_LANG_TABLE_MAP:
+		return DOC_LANG_TABLE_MAP[clean]
+	primary = clean.split("-")[0]
+	if primary in DOC_LANG_TABLE_MAP:
+		return DOC_LANG_TABLE_MAP[primary]
+	return None
+
+
+TABLE_PREFIX_TO_LANG_NAME: Dict[str, str] = {
+	"fa": "Persian",
+	"ar": "Arabic",
+	"ur": "Urdu",
+	"ckb": "Kurdish",
+	"en": "English (Unified)",
+	"us": "English (US)",
+	"fr": "French",
+	"de": "German",
+	"es": "Spanish",
+	"it": "Italian",
+	"pt": "Portuguese",
+	"nl": "Dutch",
+	"sv": "Swedish",
+	"no": "Norwegian",
+	"da": "Danish",
+	"fi": "Finnish",
+	"pl": "Polish",
+	"cs": "Czech",
+	"sk": "Slovak",
+	"hu": "Hungarian",
+	"ro": "Romanian",
+	"hr": "Croatian",
+	"sl": "Slovenian",
+	"tr": "Turkish",
+	"ru": "Russian",
+	"uk": "Ukrainian",
+	"bel": "Belarusian",
+	"bg": "Bulgarian",
+	"sr": "Serbian",
+	"he": "Hebrew",
+	"yi": "Yiddish",
+	"el": "Greek",
+	"hi": "Hindi",
+	"mr": "Marathi",
+	"bn": "Bengali",
+	"ta": "Tamil",
+	"te": "Telugu",
+	"ka": "Georgian",
+	"hy": "Armenian",
+	"am": "Amharic",
+	"th": "Thai",
+	"zh": "Chinese",
+	"ja": "Japanese",
+	"ko": "Korean",
+}
+
+
+def get_language_name_for_table(table_file: str, display_name: str = "") -> str:
+	"""Return a clean human-readable language name for a braille table."""
+	if table_file:
+		base = os.path.basename(table_file).lower()
+		prefix = base.split("-")[0].split(".")[0]
+		if prefix in TABLE_PREFIX_TO_LANG_NAME:
+			return TABLE_PREFIX_TO_LANG_NAME[prefix]
+
+	if display_name:
+		for marker in (" Grade", " Computer", " Literary", " braille", " (", " contracted", " uncontracted"):
+			if marker in display_name:
+				cand = display_name.split(marker)[0].strip()
+				if cand:
+					return cand
+		return display_name.strip()
+
+	s_info = resolve_table_to_script(table_file)
+	return s_info.family_name if s_info else "Braille"
+
+
+LANGUAGE_STOP_WORDS: Dict[str, FrozenSet[str]] = {
+	"fa": frozenset([
+		"در", "به", "از", "که", "را", "با", "برای", "این", "آن", "است", "بود", "شد",
+		"یک", "های", "کرد", "بر", "تا", "خود", "یا", "هم", "نیز", "اما", "اگر", "وی",
+		"ما", "من", "او", "آنها", "شما", "چه", "چون", "بوده", "شده", "می", "نمی"
+	]),
+	"ar": frozenset([
+		"في", "من", "على", "إلى", "عن", "أن", "إن", "هذا", "هذه", "التي", "الذي",
+		"الذين", "كان", "كانت", "ما", "لم", "لن", "مع", "كل", "قد", "لا", "أو",
+		"ثم", "حيث", "هو", "هي", "هم", "هن", "نحن", "أنا", "أنت", "تلك", "ذلك", "قال"
+	]),
+	"en": frozenset([
+		"the", "and", "is", "in", "it", "you", "that", "he", "was", "for", "on", "are",
+		"as", "with", "his", "they", "at", "be", "this", "have", "from", "or", "one",
+		"had", "by", "word", "but", "not", "what", "all", "were", "we", "when", "your",
+		"can", "said", "there", "use", "an", "each", "which", "she", "do", "how", "their"
+	]),
+	"fr": frozenset([
+		"le", "la", "les", "de", "des", "du", "un", "une", "dans", "sur", "pour", "avec",
+		"est", "sont", "qui", "que", "ce", "cette", "ces", "en", "par", "au", "aux",
+		"pas", "plus", "ne", "se", "il", "elle", "ils", "elles", "mais", "ou", "et", "donc"
+	]),
+	"de": frozenset([
+		"der", "die", "das", "und", "in", "den", "von", "zu", "mit", "sich", "des", "auf",
+		"für", "ist", "im", "dem", "nicht", "ein", "eine", "einer", "einem", "einen",
+		"als", "auch", "es", "an", "werden", "aus", "er", "hat", "dass", "sie", "nach", "wird"
+	]),
+	"es": frozenset([
+		"de", "la", "que", "el", "en", "y", "a", "los", "del", "se", "las", "por", "un",
+		"para", "con", "no", "una", "su", "al", "lo", "como", "más", "pero", "sus", "le",
+		"ya", "o", "este", "sí", "porque", "esta", "son", "entre", "está", "cuando"
+	]),
+}
+
+
+def get_table_lang_code(table_file: str) -> str:
+	"""Extract primary language subtag from table filename (e.g. 'fa' from 'fa-ir-g1.utb')."""
+	base = os.path.basename(table_file).lower()
+	return base.split("-")[0].split(".")[0]
+
+
+def detect_intra_script_table(text: str, candidate_tables: List[str]) -> Optional[str]:
+	"""Detect which table among candidate tables in the same script family should be used.
+
+	Returns the best-matching candidate table filename, or candidate_tables[0] by default.
+	Guarantees loanword stability: single loanwords or ambiguous text never cause a table switch.
+	Requires at least 2 distinct stop words of the alternate language to switch.
+	"""
+	if not text or not candidate_tables:
+		return candidate_tables[0] if candidate_tables else None
+	if len(candidate_tables) == 1:
+		return candidate_tables[0]
+
+	words = [w for w in re.findall(r"\w+", text.lower()) if w]
+	if not words:
+		return candidate_tables[0]
+
+	base_table = candidate_tables[0]
+	base_code = get_table_lang_code(base_table)
+	base_stop = LANGUAGE_STOP_WORDS.get(base_code, frozenset())
+
+	base_matches = [w for w in words if w in base_stop]
+	base_distinct = len(set(base_matches))
+
+	best_table = base_table
+	max_distinct = base_distinct
+	max_count = len(base_matches)
+
+	for alt_table in candidate_tables[1:]:
+		alt_code = get_table_lang_code(alt_table)
+		alt_stop = LANGUAGE_STOP_WORDS.get(alt_code)
+		if not alt_stop:
+			continue
+		alt_matches = [w for w in words if w in alt_stop]
+		alt_distinct = len(set(alt_matches))
+		alt_count = len(alt_matches)
+
+		if alt_distinct >= 2 and alt_distinct > max_distinct and alt_count > max_count:
+			best_table = alt_table
+			max_distinct = alt_distinct
+			max_count = alt_count
+
+	return best_table
 
 

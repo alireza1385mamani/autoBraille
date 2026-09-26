@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: autoBraille 1.0.2\n"
 "Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\n"
-"POT-Creation-Date: 2026-09-26 10:48+0000\n"
+"POT-Creation-Date: 2026-09-26 12:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -32,9 +32,9 @@ msgstr ""
 #. Translators: Title of message box dialogs
 #: addon/globalPlugins/autoBraille/__init__.py:94
 #: addon/globalPlugins/autoBraille/__init__.py:445
-#: addon/globalPlugins/autoBraille/__init__.py:573
-#: addon/globalPlugins/autoBraille/__init__.py:589
-#: addon/globalPlugins/autoBraille/__init__.py:598
+#: addon/globalPlugins/autoBraille/__init__.py:575
+#: addon/globalPlugins/autoBraille/__init__.py:591
+#: addon/globalPlugins/autoBraille/__init__.py:600
 #: addon/globalPlugins/autoBraille/__init__.py:341
 msgid "Auto Braille"
 msgstr ""
@@ -55,27 +55,27 @@ msgid "Primary Perkins &input braille table:"
 msgstr ""
 
 #. Translators: Announcement when Auto Braille translation is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:580
+#: addon/globalPlugins/autoBraille/__init__.py:582
 msgid "Auto Braille enabled"
 msgstr ""
 
 #. Translators: Announcement when Auto Braille translation is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:580
+#: addon/globalPlugins/autoBraille/__init__.py:582
 msgid "Auto Braille disabled"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:572
+#: addon/globalPlugins/autoBraille/__init__.py:574
 msgid "Toggles automatic universal multi-script braille translation on and off"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:588
+#: addon/globalPlugins/autoBraille/__init__.py:590
 msgid "Cycles or toggles Perkins braille keyboard input language"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:597
+#: addon/globalPlugins/autoBraille/__init__.py:599
 msgid "Announces the language and braille table at the caret or review cursor"
 msgstr ""
 
@@ -129,13 +129,13 @@ msgstr ""
 msgid "Please select a braille table from the list to configure."
 msgstr ""
 
-#. Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is script name, third %s is braille table)
-#: addon/globalPlugins/autoBraille/__init__.py:669
+#. Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is language name, third %s is braille table)
+#: addon/globalPlugins/autoBraille/__init__.py:680
 msgid "%s: %s (%s)"
 msgstr ""
 
-#. Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is script name, second %s is braille table)
-#: addon/globalPlugins/autoBraille/__init__.py:672
+#. Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is language name, second %s is braille table)
+#: addon/globalPlugins/autoBraille/__init__.py:683
 msgid "%s (%s)"
 msgstr ""
 
@@ -184,6 +184,6 @@ msgid "Configure Braille Table — %s"
 msgstr ""
 
 #. Translators: Announcement when input braille table is switched
-#: addon/globalPlugins/autoBraille/input_sync.py:313
+#: addon/globalPlugins/autoBraille/input_sync.py:335
 msgid "Braille input: %s"
 msgstr ""
