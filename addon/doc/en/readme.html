@@ -4,45 +4,118 @@
     <meta charset="UTF-8">
     <title>Auto Braille - User Guide</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 0 15px; color: #222; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 850px;
+            margin: 25px auto;
+            padding: 0 20px;
+            color: #1a202c;
+            background-color: #ffffff;
+        }
         h1, h2, h3 { color: #1a365d; }
-        h1 { border-bottom: 2px solid #2b6cb0; padding-bottom: 8px; }
-        h2 { border-bottom: 1px solid #cbd5e0; padding-bottom: 4px; margin-top: 25px; }
-        code { background: #edf2f7; padding: 2px 5px; border-radius: 4px; }
+        h1 { border-bottom: 2px solid #2b6cb0; padding-bottom: 8px; font-size: 1.8em; }
+        h2 { border-bottom: 1px solid #cbd5e0; padding-bottom: 4px; margin-top: 30px; font-size: 1.4em; }
+        h3 { margin-top: 20px; font-size: 1.15em; color: #2d3748; }
+        code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: Consolas, monospace; }
         ul, ol { padding-left: 25px; }
+        li { margin-bottom: 6px; }
+        .meta { background: #ebf8ff; border-left: 4px solid #3182ce; padding: 12px 16px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .note { background: #fffaf0; border-left: 4px solid #dd6b20; padding: 10px 14px; margin: 15px 0; border-radius: 0 4px 4px 0; }
+        table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+        th { background: #f7fafc; color: #2d3748; }
     </style>
 </head>
 <body>
     <h1>Auto Braille: Universal Multi-Script In-Line Translation &amp; Perkins Input for NVDA</h1>
-    <p><strong>Author:</strong> Alireza Mamani &amp; Antigravity (&lt;https://github.com/alireza1385mamani&gt;) | <strong>Repository:</strong> &lt;https://github.com/alireza1385mamani/autoBraille&gt;</p>
-    <p><strong>Compatibility:</strong> NVDA 2024.1 to 2026.3+ | <strong>License:</strong> GNU General Public License v2.0</p>
+    
+    <div class="meta">
+        <p><strong>Version:</strong> 1.0.4 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.3+ | <strong>License:</strong> GNU General Public License v2.0</p>
+        <p><strong>Author:</strong> Alireza Mamani &amp; Antigravity (&lt;<a href="https://github.com/alireza1385mamani">https://github.com/alireza1385mamani</a>&gt;)<br>
+        <strong>Repository:</strong> &lt;<a href="https://github.com/alireza1385mamani/autoBraille">https://github.com/alireza1385mamani/autoBraille</a>&gt;</p>
+    </div>
+
+    <p><strong>Auto Braille</strong> is an open-source NVDA global plugin that brings seamless multi-lingual braille output and intelligent Perkins keyboard input auto-switching to every refreshable braille display supported by NVDA.</p>
 
     <h2>Key Features</h2>
+
+    <h3>1. In-Line Multi-Script Output Translation</h3>
     <ul>
-        <li><strong>In-Line Multi-Script Output Translation:</strong> Automatically detects distinct writing systems (Arabic/Persian, Cyrillic, Hebrew, Greek, Indic including Sinhala, CJK, Caucasian including Georgian and Armenian, Latin) and translates each segment with its designated Liblouis table in-line.</li>
-        <li><strong>Perkins Braille Input Auto-Switching:</strong> Automatically synchronizes the braille keyboard input table with the active Windows keyboard layout in real time.</li>
-        <li><strong>Tactile &amp; Spoken Boundary Indicators:</strong> Optional Dot 8 or Dot 7 pin indicators at language transitions, or continuous Dots 7 &amp; 8 underline under secondary language text.</li>
-        <li><strong>Announce Language at Caret:</strong> Shortcut speaking and flashing the character, language, and Liblouis table on the braille display.</li>
-        <li><strong>Document Language Tag Integration:</strong> Respects official HTML/Word <code>lang</code> tags with automatic script compatibility validation and fallback.</li>
+        <li>Automatically detects distinct writing systems (Arabic/Persian, Cyrillic, Hebrew, Greek, Indic including Sinhala, East Asian CJK, Southeast Asian, Caucasian including Georgian and Armenian, and Latin) in any line of text.</li>
+        <li>Dynamically routes each language segment to its dedicated Liblouis table (e.g. <code>fa-ir-g1.utb</code> for Persian, <code>ar-ar-g1.utb</code> for Arabic, and <code>en-ueb-g1.ctb</code> for English).</li>
+        <li>Stitches braille cells together seamlessly in real time with sub-microsecond C-level regex execution and full cursor routing accuracy.</li>
     </ul>
 
-    <h2>Settings</h2>
-    <p><em>Note: In compliance with NVDA Add-on Store security standards, settings are safely unavailable when NVDA runs on the Windows Secure Desktop (e.g. UAC prompts and login screens).</em></p>
+    <h3>2. Bi-Directional Perkins Braille Keyboard Auto-Switching</h3>
+    <ul>
+        <li>Real-time synchronization between the active Windows keyboard layout (e.g. Persian <code>0x0429</code> vs. English <code>0x0409</code>) and the Perkins braille input table.</li>
+        <li>Press <code>Alt + Shift</code> or <code>Windows + Space</code> anywhere in Windows &mdash; your Perkins braille keyboard updates instantly without navigating nested menus.</li>
+    </ul>
+
+    <h3>3. Tactile &amp; Spoken Boundary Indicators (Optional)</h3>
+    <ul>
+        <li><strong>Tactile Pin Indicators:</strong> Subtly feel language transitions on 8-dot braille displays:
+            <ul>
+                <li><strong>Dot 8 under first cell of language change (Recommended):</strong> Raises pin 8 under the first cell when text switches languages.</li>
+                <li><strong>Dot 7 under first cell of language change:</strong> Raises pin 7 under the first cell when text switches languages.</li>
+                <li><strong>Dots 7 and 8 underline under secondary language cells:</strong> Continuously underlines secondary language text with pins 7 and 8.</li>
+            </ul>
+        </li>
+        <li><strong>Announce Language at Caret:</strong> Press your assigned gesture (e.g. <code>NVDA + Shift + L</code>) to simultaneously hear and feel the active character, specific language name, and Liblouis table on the display.</li>
+    </ul>
+
+    <h3>4. Smart Document Language Tag Integration (<code>lang</code> tags)</h3>
+    <ul>
+        <li>In web browsers (Chrome, Edge, Firefox) and Office applications (Word, LibreOffice), official document language markup (such as <code>&lt;span lang="fa"&gt;</code>, <code>&lt;span lang="ar"&gt;</code>, <code>&lt;p lang="fr"&gt;</code>) is automatically detected and respected.</li>
+        <li><strong>Script Compatibility Guard:</strong> If text is mislabeled with an incompatible tag, Auto Braille automatically validates the characters and falls back to the Unicode script detector so your braille is never garbled.</li>
+    </ul>
+
+    <h3>5. Contracted Braille (Grade 2) Support &amp; Boundary Guarding</h3>
+    <ul>
+        <li><strong>Full Grade 2 Support:</strong> Configure any table to use Contracted Braille (e.g. <code>en-ueb-g2.ctb</code>, <code>ar-ar-g2.ctb</code>, <code>de-g2.ctb</code>).</li>
+        <li><strong>Single-Letter Word-Sign Protection:</strong> In Grade 2 UEB, isolated letters contract to whole words (<code>b</code> = "but", <code>c</code> = "can", <code>x</code> = "it"). Auto Braille automatically routes isolated single letters flanked by foreign text or punctuation (e.g. <code>گزینه b</code>, <code>کلید c</code>) through an uncontracted Grade 1 companion table.</li>
+        <li><strong>Code &amp; Identifier Protection:</strong> Technical identifiers (such as <code>user_id</code>, <code>file_name</code>, <code>camelCase</code>, or file paths) are protected from literary contractions so you can read and debug code accurately.</li>
+        <li><strong>Numeric Boundary Lookback:</strong> Letters immediately following digits across boundaries (e.g. <code>123b</code>) are shielded from digit-letter contraction bleed.</li>
+    </ul>
+
+    <h3>6. 3-Tier Multi-Language Architecture &amp; Loanword Stability</h3>
+    <ul>
+        <li><strong>Zero Flapping on Loanwords:</strong> Persian words with Arabic letters (such as <code>دایرة‌المعارف</code>, <code>نهایة</code>) and English words with accents (<code>café</code>, <code>résumé</code>) remain stably in their native table.</li>
+        <li><strong>Intra-Script Disambiguation:</strong> When both Persian and Arabic, or English and French/German tables are active, multi-word grammatical clauses (such as <code>قال المعلم: في التأني السلامة</code>) are automatically routed using grammatical stop-word phrase density.</li>
+        <li><strong>Dynamic Secondary Defaults:</strong> If your primary NVDA table is Persian, Arabic, or Russian, Auto Braille automatically defaults its secondary table to English UEB out of the box.</li>
+    </ul>
+
+    <h3>7. One-Click Setup Wizard (Auto-Detect Windows Keyboards)</h3>
+    <ul>
+        <li><strong>Instant Automatic Setup:</strong> Click <strong>Auto-Detect Keyboards...</strong> in settings to scan your installed Windows keyboard layouts.</li>
+        <li><strong>Smart Liblouis Mapping:</strong> Matches each keyboard to its recommended braille output and Perkins input table, while preserving your primary language and eliminating duplicate dialects.</li>
+        <li><strong>In-Place Customization:</strong> Select any detected candidate and click <strong>Edit Table...</strong> to customize its output or Perkins input table before applying.</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <div class="note">
+        <strong>Security Notice:</strong> In compliance with official NVDA Add-on Store standards, the configuration panel is safely disabled when NVDA runs on the Windows Secure Desktop (e.g. UAC elevation prompts and login screens).
+    </div>
+
     <p>Open <strong>NVDA Settings (NVDA + Control + G) &rarr; Auto Braille</strong> to configure:</p>
     <ul>
-        <li>Master translation and input synchronization toggles.</li>
-        <li>Document language tag honoring.</li>
-        <li>Tactile indicator for language boundaries.</li>
-        <li>Primary output and Perkins input braille tables.</li>
-        <li>Active Secondary Braille Tables list (Add Table, Configure Table, Remove Table).</li>
+        <li><strong>Enable automatic multi-language braille output translation:</strong> Master toggle for in-line multi-script translation.</li>
+        <li><strong>Automatically sync Perkins braille input with active Windows keyboard layout:</strong> Master toggle for real-time Perkins input table switching.</li>
+        <li><strong>Honor document language tags in web and office documents:</strong> Prioritize official HTML/Word <code>lang</code> tags when accurate.</li>
+        <li><strong>Protect isolated letters and code identifiers in Contracted Braille (Grade 2):</strong> Safeguards single-letter variables and technical identifiers against accidental contractions.</li>
+        <li><strong>Tactile indicator for language boundaries:</strong> Select your preferred pin indicator (None, Dot 8, Dot 7, or Dots 7 and 8 underline).</li>
+        <li><strong>Primary output braille table:</strong> Select your default output table from all installed Liblouis tables, or choose <em>Automatic (Use active NVDA output table)</em>.</li>
+        <li><strong>Primary Perkins input braille table:</strong> Select your default Perkins input table, or choose <em>Automatic (Follow active NVDA input table)</em>.</li>
+        <li><strong>Active Secondary Braille Tables List:</strong> Click <strong>Add Table...</strong> to activate any secondary braille table manually, or click <strong>Auto-Detect Keyboards...</strong> to instantly configure all installed Windows keyboard languages.</li>
     </ul>
 
     <h2>Input Gestures</h2>
     <p>Available under <strong>NVDA Menu &rarr; Preferences &rarr; Input Gestures &rarr; Auto Braille</strong>:</p>
     <ul>
-        <li>Toggles automatic universal multi-script braille translation on and off.</li>
-        <li>Cycles or toggles Perkins braille keyboard input language.</li>
-        <li>Announces the language and braille table at the caret or review cursor.</li>
+        <li><strong>Toggles automatic universal multi-script braille translation on and off:</strong> (Unassigned by default).</li>
+        <li><strong>Cycles or toggles Perkins braille keyboard input language:</strong> (Unassigned by default).</li>
+        <li><strong>Announces the language and braille table at the caret or review cursor:</strong> (Recommended shortcut: <code>NVDA + Shift + L</code> or a key on your braille display).</li>
     </ul>
 </body>
 </html>
