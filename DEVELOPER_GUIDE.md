@@ -14,8 +14,9 @@ Welcome to the **Auto Braille** developer guide! This document provides an exhau
 6. [Deep Dive: Tactile Boundary Markers](#6-deep-dive-tactile-boundary-markers)
 7. [Deep Dive: Document Language Tag Integration](#7-deep-dive-document-language-tag-integration)
 8. [Adding New Writing Systems & Liblouis Tables](#8-adding-new-writing-systems--liblouis-tables)
-9. [Build System & Automated CI/CD](#9-build-system--automated-cicd)
-10. [Test Suites & Quality Assurance](#10-test-suites--quality-assurance)
+9. [Localization & Internationalization (gettext)](#9-localization--internationalization-gettext)
+10. [Build System & Automated CI/CD](#10-build-system--automated-cicd)
+11. [Test Suites & Quality Assurance](#11-test-suites--quality-assurance)
 
 ---
 
@@ -62,12 +63,13 @@ flowchart TD
 
 | Module | File Path | Core Responsibility |
 | :--- | :--- | :--- |
-| **`__init__.py`** | `addon/globalPlugins/autoBraille/__init__.py` | Plugin lifecycle (`initialize`, `terminate`), event handlers (`event_gainFocus`), `louisHelper.translate` hook, settings panel GUI, and caret announcement script. |
+| **`__init__.py`** | `addon/globalPlugins/autoBraille/__init__.py` | Plugin lifecycle (`initialize`, `terminate`), event handlers (`event_gainFocus`), `louisHelper.translate` hook, secure mode enforcement, settings panel GUI, and caret announcement script. |
 | **`translator.py`** | `addon/globalPlugins/autoBraille/translator.py` | Multi-script translation orchestrator, table chain resolution, routing position stitching (`b2r`, `r2b`), cursor clamping, and tactile marker pin masking. |
-| **`segmenter.py`** | `addon/globalPlugins/autoBraille/segmenter.py` | High-speed regex segmenter with disjoint Unicode script intervals and LRU caching for microsecond-level text partitioning. |
+| **`segmenter.py`** | `addon/globalPlugins/autoBraille/segmenter.py` | High-speed regex segmenter with disjoint Unicode script intervals, atomic numeric literal preservation, and LRU caching for microsecond-level text partitioning. |
 | **`scripts_data.py`** | `addon/globalPlugins/autoBraille/scripts_data.py` | Universal registry for 24+ global writing systems, BCP-47 tag mappings, Liblouis table prefixes/keywords, and Windows LANGID lookups. |
-| **`input_sync.py`** | `addon/globalPlugins/autoBraille/input_sync.py` | Perkins braille keyboard auto-switching, Win32 layout detection (`GetKeyboardLayout`), table resolution, and cyclic input switching. |
+| **`input_sync.py`** | `addon/globalPlugins/autoBraille/input_sync.py` | Perkins braille keyboard auto-switching, 64-bit safe Win32 layout detection (`GetKeyboardLayout`), table resolution, and cyclic input switching. |
 | **`language_dialogs.py`** | `addon/globalPlugins/autoBraille/language_dialogs.py` | Accessible wxPython modal dialogs: `AddTableDialog` and `EditTableDialog` for configuring secondary tables. |
+| **`generate_pot.py`** | `generate_pot.py` | Standalone AST extractor parsing all translatable `_()` strings and `# Translators:` comments into `addon/locale/autoBraille.pot`. |
 
 ---
 
@@ -105,12 +107,12 @@ cell_offset = len(all_cells)
 all_cells.extend(cells)
 
 # Offset cell-to-character routing
-for p in b2r:
-    all_b2r.append(start_idx + p)
+for cell_idx in b2r:
+    all_b2r.append(start_idx + cell_idx)
 
 # Offset character-to-cell routing
-for p in r2b:
-    all_r2b.append(cell_offset + p)
+for char_idx in r2b:
+    all_r2b.append(cell_offset + char_idx)
 
 # Track cursor position
 if cur is not None and final_cursor_pos is None:
@@ -148,12 +150,14 @@ Script detection in `segmenter.py` uses precise, non-overlapping Unicode regex r
 - **East Asian CJK:** `[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]`
 - **Latin / European:** `[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]`
 
-### Neutral Token Absorption
+### Neutral Token Absorption & Contiguous Numeric Literal Preservation
 Whitespace, numbers, and common punctuation (`.,;:!?()-"`) do not possess an inherent script. To prevent fragmentation, neutral sequences are absorbed into the surrounding script context:
 ```
 "سلام " + "test" + " است." 
 --> [("سلام ", "arabic_persian"), ("test ", "latin"), ("است.", "arabic_persian")]
 ```
+
+**Atomic Number Preservation:** When neutral punctuation and whitespace surround numbers between different writing systems, standard neutral splitting could inadvertently slice numbers across script boundaries. `segmenter.py` enforces contiguous digit boundary preservation: contiguous Arabic (`[0-9]`) or Indic/Persian (`[۰-۹]`) digits are retained as atomic units and associated with their respective script context, preventing garbled mathematical or numerical expressions.
 
 ---
 
@@ -161,35 +165,64 @@ Whitespace, numbers, and common punctuation (`.,;:!?()-"`) do not possess an inh
 
 The Perkins input synchronization architecture in `input_sync.py` hooks NVDA's `BrailleInputHandler.input()`:
 ```python
-_orig_braille_input = getattr(brailleInput.BrailleInputHandler, "input", None)
-if _orig_braille_input:
-    brailleInput.BrailleInputHandler.input = _hooked_braille_input
+bih = getattr(brailleInput, "BrailleInputHandler", None)
+current_input = getattr(bih, "input", None) if bih else None
+if bih and current_input and current_input != _hooked_braille_input:
+    _orig_braille_input = current_input
+    bih.input = _hooked_braille_input
+```
+
+### 64-bit Safe Win32 Ctypes Binding
+To prevent 64-bit pointer truncation and `ERROR_INVALID_WINDOW_HANDLE` crashes on modern 64-bit Windows installations running NVDA, `input_sync.py` explicitly declares `argtypes` and `restype` using `ctypes.wintypes`:
+```python
+_user32.GetForegroundWindow.argtypes = []
+_user32.GetForegroundWindow.restype = wintypes.HWND
+
+_user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+_user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+
+_user32.GetKeyboardLayout.argtypes = [wintypes.DWORD]
+_user32.GetKeyboardLayout.restype = wintypes.HKL
 ```
 
 ### Win32 Keyboard Layout Resolution
 When the user types on Perkins keys or switches focus:
-1. `user32.GetForegroundWindow()` retrieves the active window.
-2. `user32.GetWindowThreadProcessId()` retrieves the thread ID.
-3. `user32.GetKeyboardLayout(thread_id)` retrieves the HKL / LANGID (e.g. `0x0429` for Persian, `0x0409` for English).
+1. `user32.GetForegroundWindow()` retrieves the active window handle (`HWND`).
+2. `user32.GetWindowThreadProcessId()` retrieves the thread ID (`DWORD`).
+3. `user32.GetKeyboardLayout(thread_id)` retrieves the layout handle (`HKL`), from which the 16-bit LANGID is extracted (`HKL & 0xFFFF`).
 4. `input_sync.resolve_input_table_for_lang(lang_id)` matches against the active configured tables and sets `brailleInput.handler.table`.
 
 ---
 
 ## 6. Deep Dive: Tactile Boundary Markers
 
-Tactile markers are injected in `translator.py` by applying bitwise OR masks to the cell integers:
-- **Dot 8 (`0x80`):** Bottom-right pin of an 8-dot braille display.
-- **Dot 7 (`0x40`):** Bottom-left pin of an 8-dot braille display.
-- **Dots 7 and 8 (`0xC0`):** Both bottom pins raised simultaneously (underline).
-
+Tactile markers are injected in `translator.py` by applying bitwise OR masks to the cell integers using named constants conforming to ISO/TR 11548-1:
 ```python
+BRAILLE_DOT_7: int = 0x40        # Lower-left dot (Pin 7)
+BRAILLE_DOT_8: int = 0x80        # Lower-right dot (Pin 8)
+BRAILLE_DOTS_7_8: int = 0xC0     # Underline indicator (Pins 7 and 8)
+```
+
+### Multi-Segment and Single-Segment Support
+Tactile indicators are applied both across multi-segment transitions and single-segment secondary lines:
+```python
+# For single-segment lines where the entire text belongs to a secondary script:
+if cells and seg_script != primary_script:
+    if tactile_marker == "dot8_first":
+        cells = [cells[0] | BRAILLE_DOT_8] + cells[1:]
+    elif tactile_marker == "dot7_first":
+        cells = [cells[0] | BRAILLE_DOT_7] + cells[1:]
+    elif tactile_marker == "dots78_secondary":
+        cells = [cell | BRAILLE_DOTS_7_8 for cell in cells]
+
+# For multi-segment lines at transition boundaries:
 if cells:
     if tactile_marker == "dot8_first" and idx > 0 and script != segments[idx - 1][3]:
-        cells = [cells[0] | 0x80] + cells[1:]
+        cells = [cells[0] | BRAILLE_DOT_8] + cells[1:]
     elif tactile_marker == "dot7_first" and idx > 0 and script != segments[idx - 1][3]:
-        cells = [cells[0] | 0x40] + cells[1:]
+        cells = [cells[0] | BRAILLE_DOT_7] + cells[1:]
     elif tactile_marker == "dots78_secondary" and script != primary_script:
-        cells = [c | 0xC0 for c in cells]
+        cells = [cell | BRAILLE_DOTS_7_8 for cell in cells]
 ```
 Because the cell count is unaltered, cursor routing keys and text cursor positions remain 100% aligned.
 
@@ -230,32 +263,77 @@ Add BCP-47 tag mappings in `DOC_LANG_MAP`:
 ```
 Auto Braille's dynamic configuration, GUI dialogs, table-to-script resolution, and Perkins input sync will automatically recognize the new writing system!
 
+> [!NOTE]
+> Recent additions include complete definitions for **Sinhala** (`sin-in-g1.utb`), **Armenian** (`hy.ctb`), and expanded multi-prefix matching for **Georgian** (`ka.`, `ka-`, `ka.utb`). All 132 `DOC_LANG_MAP` entries are formally validated against active script IDs.
+
 ---
 
-## 9. Build System & Automated CI/CD
+## 9. Localization & Internationalization (gettext)
+
+Auto Braille strictly enforces NVDA Add-on Store standards for translatability:
+
+### 1. Translator Comments Convention
+Every user-facing string wrapped with `_("...")` must be immediately preceded by a `# Translators:` comment explaining the context, controls, or placeholders:
+```python
+# Translators: Label for the output braille table selector in the Add Table dialog.
+self.outputChoice = sHelper.addLabeledControl(
+    _("&Output braille table:"), wx.Choice, choices=out_choices
+)
+```
+
+### 2. Standalone Catalog Generator (`generate_pot.py`)
+Auto Braille includes a zero-dependency AST parser [generate_pot.py](file:///c:/Users/maman/.gemini/antigravity/scratch/autoBraille/generate_pot.py) that inspects manifest metadata and Python source code:
+```bash
+py.exe generate_pot.py
+```
+This generates `addon/locale/autoBraille.pot` with all 32+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
+
+### 3. Adding Translated PO Files
+Translators create `addon/locale/<lang>/LC_MESSAGES/autoBraille.po` using POEdit or standard gettext tools. During packaging, `build.py` automatically bundles all compiled catalogs.
+
+---
+
+## 10. Build System & Automated CI/CD
 
 ### Building via Python (`build.py`)
+Auto Braille utilizes a standalone packaging script:
 ```bash
-python build.py
+py.exe build.py
 ```
-Produces `autoBraille-1.0.0.nvda-addon` in the root repository folder, cleanly verifying `manifest.ini` and excluding `__pycache__`, tests, and docs.
+This inspects `addon/manifest.ini`, excludes bytecode (`.pyc`, `__pycache__`) and development files, and packages a clean distributable archive:
+`dist/autoBraille-1.0.2.nvda-addon`
 
 ### Building via PowerShell (`build.ps1`)
+On Windows, you can package and optionally run all tests in one step:
 ```powershell
-.\build.ps1
+powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 ```
 
 ### GitHub Actions CI/CD (`.github/workflows/release.yml`)
-Pushes to `main` run automated tests. Pushing a tag (`v*`) automatically builds the `.nvda-addon` bundle and attaches it as a GitHub Release asset!
+* Pushes and PRs on `main` execute unit tests across Windows runners.
+* Pushing a version tag (`v*`, e.g. `v1.0.2`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
 
 ---
 
-## 10. Test Suites & Quality Assurance
+## 11. Test Suites & Quality Assurance
 
-Run the test suite using Python:
+Auto Braille features a comprehensive 4-suite offline testing framework requiring zero running NVDA instances:
+
+| Suite | File Path | Focus Area |
+| :--- | :--- | :--- |
+| **Audit Fixes** | `tests/test_audit_fixes.py` | 64-bit Win32 pointer types, 132 language mappings, Georgian prefix matching, gettext fallbacks, atomic numbers, single-segment tactile pins, brace formatting in caret announcement, and monkey-patch idempotency. |
+| **Tables & Sync** | `tests/test_tables_mode.py` | Automatic vs. explicit primary tables, secondary table detection, and Perkins layout-to-table resolution across Windows LANGIDs. |
+| **Features 3 & 4** | `tests/test_features_3_4.py` | Document language tag parsing, HTML/Word `lang` validation, tactile boundary indicators (`dot8_first`, `dot7_first`, `dots78_secondary`), spoken/braille announcements, and settings panel GUI. |
+| **Segmenter** | `tests/test_segmenter.py` | Unicode script segmentation across Persian, Russian, Hebrew, Greek, and English sentences with neutral gap absorption. |
+
+### Running Unit Tests
+Execute individual suites using the Python Install Manager:
 ```bash
-python tests/test_features_3_4.py
-python tests/test_tables_mode.py
-python tests/test_segmenter.py
+py.exe tests/test_audit_fixes.py
+py.exe tests/test_tables_mode.py
+py.exe tests/test_features_3_4.py
+py.exe tests/test_segmenter.py
 ```
-All unit tests mock NVDA internal modules (`braille`, `brailleTables`, `config`, `louisHelper`, `wx`, `textInfos`), enabling complete offline execution without launching NVDA.
+
+### Test Mock Isolation Pattern
+All test suites reuse existing mock modules in `sys.modules` (`sys.modules.get(...)`) rather than blindly overwriting them, guaranteeing clean module state and preventing mock collision during sequential test execution.

@@ -45,7 +45,7 @@ Traditionally, NVDA users can only select a single braille translation table at 
 
 ## 📦 Installation
 
-1. Download the latest **`autoBraille-X.X.X.nvda-addon`** package from the [Releases](https://github.com/your-username/autoBraille/releases) page.
+1. Download the latest **`autoBraille-X.X.X.nvda-addon`** package from the [Releases](https://github.com/alireza1385mamani/autoBraille/releases) page.
 2. Open the downloaded file in NVDA (or press `Enter` on the file in File Explorer).
 3. When NVDA asks to confirm installation, select **Yes**.
 4. Restart NVDA when prompted.
@@ -105,14 +105,14 @@ Explore the test suites included in the `doc/` directory:
 
 ## 🛠️ Developer Guide & Architecture
 
-Are you interested in how Auto Braille hooks `louisHelper.translate`, manages `b2r`/`r2b` array remapping, or communicates with Windows Win32 keyboard APIs?
+Are you interested in how Auto Braille hooks `louisHelper.translate`, manages `b2r`/`r2b` array remapping, safely guards Windows Secure Desktop sessions, or communicates with Windows Win32 keyboard APIs?
 Read the comprehensive [Developer Guide](DEVELOPER_GUIDE.md).
 
 ### Building from Source
 
-Build the `.nvda-addon` bundle with Python:
+Build the clean `.nvda-addon` bundle into the `dist/` folder using the Python Install Manager:
 ```bash
-python build.py
+py.exe build.py
 ```
 Or with PowerShell on Windows:
 ```powershell
@@ -120,10 +120,26 @@ Or with PowerShell on Windows:
 ```
 
 ### Running Automated Tests
+
+Run the complete 4-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, and document tags:
 ```bash
-python tests/test_features_3_4.py
-python tests/test_tables_mode.py
-python tests/test_segmenter.py
+py.exe tests/test_audit_fixes.py
+py.exe tests/test_tables_mode.py
+py.exe tests/test_features_3_4.py
+py.exe tests/test_segmenter.py
+```
+Or run all tests with the PowerShell build script:
+```powershell
+powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
+```
+
+### Localization & Translations
+
+Auto Braille adheres to standard GNU gettext localization practices:
+* All translatable UI strings are preceded by `# Translators:` comments for clarity.
+* Regenerate the translation template (`addon/locale/autoBraille.pot`) anytime strings change:
+```bash
+py.exe generate_pot.py
 ```
 
 ---

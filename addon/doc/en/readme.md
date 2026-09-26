@@ -12,7 +12,7 @@
 ## Key Features
 
 ### 1. In-Line Multi-Script Output Translation
-* Automatically identifies distinct writing systems (Arabic/Persian, Cyrillic, Hebrew, Greek, South Asian / Indic, East Asian CJK, Southeast Asian, and Latin) within any text line.
+* Automatically identifies distinct writing systems (Arabic/Persian, Cyrillic, Hebrew, Greek, South Asian / Indic including Sinhala, East Asian CJK, Southeast Asian, Caucasian including Georgian and Armenian, and Latin) within any text line.
 * Dynamically translates each language segment using its dedicated Liblouis braille table (e.g. `fa-ir-g1.utb` for Persian and `en-ueb-g1.ctb` for English).
 * Stitches braille cells together seamlessly with microsecond-level performance and full cursor routing accuracy.
 
@@ -36,6 +36,9 @@
 ## Configuration
 
 Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille** category:
+
+> [!NOTE]
+> In compliance with NVDA Add-on Store security standards, the configuration panel is safely disabled when NVDA runs on the Windows Secure Desktop (e.g. UAC prompts and login screens).
 
 1. **Enable automatic multi-language braille output translation:** Master toggle for in-line multi-script translation.
 2. **Automatically sync Perkins braille input with active Windows keyboard layout:** Master toggle for real-time Perkins input table switching.
