@@ -126,11 +126,15 @@ Explore the test suites included in the `doc/` directory:
 Are you interested in how Auto Braille hooks `louisHelper.translate`, manages `b2r`/`r2b` array remapping, safely guards Windows Secure Desktop sessions, or communicates with Windows Win32 keyboard APIs?
 Read the comprehensive [Developer Guide](DEVELOPER_GUIDE.md).
 
+### Python Version & Environment Compatibility
+
+Auto Braille is developed, compiled, and tested against **Python 3.14+ by default**, while maintaining full backward-compatibility with NVDA's Python 3.11 runtime environment.
+
 ### Building from Source
 
-Build the clean `.nvda-addon` bundle into the `dist/` folder using the Python Install Manager:
+Build the clean `.nvda-addon` bundle into the `dist/` folder (includes automatic pre-build bytecode compilation verification):
 ```bash
-py.exe build.py
+python build.py
 ```
 Or with PowerShell on Windows:
 ```powershell
@@ -139,19 +143,24 @@ Or with PowerShell on Windows:
 
 ### Running Automated Tests
 
-Run the complete 7-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, and Windows keyboard auto-detection:
+Run the complete 7-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, and Windows keyboard auto-detection with a single command:
 ```bash
-py.exe tests/test_audit_fixes.py
-py.exe tests/test_tables_mode.py
-py.exe tests/test_doc_lang_and_tactile.py
-py.exe tests/test_segmenter.py
-py.exe tests/test_intra_script.py
-py.exe tests/test_grade2_boundary.py
-py.exe tests/test_auto_detect_keyboards.py
+python run_tests.py
 ```
-Or run all tests with the PowerShell build script:
+Or with the PowerShell build script:
 ```powershell
 powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
+```
+
+Individual test suites can also be run directly:
+```bash
+python tests/test_audit_fixes.py
+python tests/test_tables_mode.py
+python tests/test_doc_lang_and_tactile.py
+python tests/test_segmenter.py
+python tests/test_intra_script.py
+python tests/test_grade2_boundary.py
+python tests/test_auto_detect_keyboards.py
 ```
 
 ### Localization & Translations

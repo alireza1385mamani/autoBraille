@@ -17,26 +17,23 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Set-Location $ScriptDir
 
-# Check if Python is available via py.exe (Python Install Manager) or python.exe
-$pythonCmd = Get-Command py.exe -ErrorAction SilentlyContinue
-if (-not $pythonCmd) {
-    $pythonCmd = Get-Command python.exe -ErrorAction SilentlyContinue
-}
+# Check if Python is available via python.exe or py.exe
+$pythonCmd = Get-Command python.exe -ErrorAction SilentlyContinue
 if (-not $pythonCmd) {
     $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
 }
+if (-not $pythonCmd) {
+    $pythonCmd = Get-Command py.exe -ErrorAction SilentlyContinue
+}
 
 if ($RunTests) {
-    Write-Host "Running test suite..." -ForegroundColor Cyan
+    Write-Host "Running Auto Braille unified test suite..." -ForegroundColor Cyan
     if ($pythonCmd) {
-        & $pythonCmd.Source tests/test_audit_fixes.py
-        & $pythonCmd.Source tests/test_tables_mode.py
-        & $pythonCmd.Source tests/test_doc_lang_and_tactile.py
-        & $pythonCmd.Source tests/test_segmenter.py
-        & $pythonCmd.Source tests/test_intra_script.py
-        & $pythonCmd.Source tests/test_grade2_boundary.py
-        & $pythonCmd.Source tests/test_auto_detect_keyboards.py
-        Write-Host "All tests passed!" -ForegroundColor Green
+        & $pythonCmd.Source run_tests.py
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Tests failed with exit code $LASTEXITCODE."
+            exit 1
+        }
     } else {
         Write-Warning "Python not found on PATH. Skipping test execution."
     }

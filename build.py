@@ -11,7 +11,20 @@ from __future__ import annotations
 import configparser
 import os
 import sys
+import py_compile
 import zipfile
+
+def verify_compilation(addon_dir: str) -> None:
+    """Byte-compile all Python files under addon/ to ensure zero syntax or encoding errors."""
+    print("Verifying Python syntax and compiling bytecode...")
+    compiled_count = 0
+    for root, _, files in os.walk(addon_dir):
+        for file in sorted(files):
+            if file.endswith(".py"):
+                py_path = os.path.join(root, file)
+                py_compile.compile(py_path, doraise=True)
+                compiled_count += 1
+    print(f"All {compiled_count} Python source files compiled successfully with zero errors.\n")
 
 def read_manifest_info(addon_dir: str) -> tuple[str, str]:
     manifest_path = os.path.join(addon_dir, "manifest.ini")
@@ -28,13 +41,16 @@ def read_manifest_info(addon_dir: str) -> tuple[str, str]:
     cp.read_string(content)
 
     name = cp.get("DEFAULT", "name", fallback="autoBraille").strip().strip('"').strip("'")
-    version = cp.get("DEFAULT", "version", fallback="1.0.2").strip().strip('"').strip("'")
+    version = cp.get("DEFAULT", "version", fallback="1.0.3").strip().strip('"').strip("'")
     return name, version
 
 def build_addon(repo_dir: str) -> str:
     addon_dir = os.path.join(repo_dir, "addon")
     if not os.path.isdir(addon_dir):
         raise FileNotFoundError(f"addon directory not found at {addon_dir}")
+
+    # Compile and verify syntax using the active Python interpreter
+    verify_compilation(addon_dir)
 
     name, version = read_manifest_info(addon_dir)
     output_filename = f"{name}-{version}.nvda-addon"

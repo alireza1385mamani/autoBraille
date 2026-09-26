@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoBraille"
+version = "1.0.3"
+description = "Universal multi-script braille translation and Perkins keyboard input auto-switching for NVDA."
+readme = "README.md"
+authors = [
+    { name = "Alireza Mamani & Antigravity" }
+]
+license = { text = "GPL-2.0-or-later" }
+requires-python = ">=3.11, <3.15"
+keywords = [
+    "nvda",
+    "braille",
+    "accessibility",
+    "liblouis",
+    "multilingual",
+    "perkins-keyboard",
+    "persian",
+    "arabic",
+    "cyrillic",
+    "hebrew",
+    "greek",
+    "devanagari"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Adaptive Technologies",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

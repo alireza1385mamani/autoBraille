@@ -14,27 +14,26 @@ env:
 
 jobs:
   test:
-    name: Run Unit Tests
+    name: Run Unit Tests (Python ${{ matrix.python-version }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.14", "3.11"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
-      - name: Run Test Suite
+      - name: Run Unified Test Suite
         shell: pwsh
         run: |
-          python tests/test_audit_fixes.py
-          python tests/test_tables_mode.py
-          python tests/test_doc_lang_and_tactile.py
-          python tests/test_segmenter.py
-          python tests/test_intra_script.py
-          python tests/test_grade2_boundary.py
-          python tests/test_auto_detect_keyboards.py
+          python run_tests.py
 
   build:
     name: Build .nvda-addon Package
@@ -44,10 +43,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
+          allow-prereleases: true
 
       - name: Build NVDA Add-on
         shell: pwsh

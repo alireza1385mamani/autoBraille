@@ -387,12 +387,15 @@ Translators create `addon/locale/<lang>/LC_MESSAGES/autoBraille.po` using POEdit
 ## 13. Build System & Automated CI/CD
 
 ### Building via Python (`build.py`)
+### Python Version Support (Python 3.14 Default & 3.11 Backward Compatibility)
+Auto Braille is developed, compiled, and tested against **Python 3.14+ by default**. At the same time, all source code strictly adheres to the common feature set shared with Python 3.11, ensuring 100% backward-compatibility with NVDA 2024's embedded runtime as well as forward-compatibility with future NVDA releases (Python 3.12, 3.13, 3.14+).
+
 Auto Braille utilizes a standalone packaging script:
 ```bash
-py.exe build.py
+python build.py
 ```
-This inspects `addon/manifest.ini`, excludes bytecode (`.pyc`, `__pycache__`) and development files, and packages a clean distributable archive:
-`dist/autoBraille-1.0.2.nvda-addon`
+This automatically verifies bytecode compilation across all source modules with `py_compile`, inspects `addon/manifest.ini`, excludes bytecode (`.pyc`, `__pycache__`) and development files, and packages a clean distributable archive:
+`dist/autoBraille-1.0.3.nvda-addon`
 
 ### Building via PowerShell (`build.ps1`)
 On Windows, you can package and optionally run all tests in one step:
@@ -401,8 +404,8 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 ```
 
 ### GitHub Actions CI/CD (`.github/workflows/release.yml`)
-* Pushes and PRs on `main` execute unit tests across Windows runners.
-* Pushing a version tag (`v*`, e.g. `v1.0.2`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
+* Pushes and PRs on `main` execute unit tests across a matrix of Windows runners testing **Python 3.14** and **Python 3.11**.
+* Pushing a version tag (`v*`, e.g. `v1.0.3`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
 
 ---
 
@@ -421,15 +424,21 @@ Auto Braille features a comprehensive 7-suite offline testing framework requirin
 | **Auto-Detect Keyboards** | `tests/test_auto_detect_keyboards.py` | 64-bit safe `GetKeyboardLayoutList`, read-only registry sanitization, 3-tier dialect resolution, variant deduplication, primary table protection, Liblouis catalog validation, and wizard UI integration. |
 
 ### Running Unit Tests
-Execute individual suites using Python:
+
+Run all 7 test suites along with bytecode compilation checks in a single command using the unified test runner:
 ```bash
-py.exe tests/test_audit_fixes.py
-py.exe tests/test_tables_mode.py
-py.exe tests/test_doc_lang_and_tactile.py
-py.exe tests/test_segmenter.py
-py.exe tests/test_intra_script.py
-py.exe tests/test_grade2_boundary.py
-py.exe tests/test_auto_detect_keyboards.py
+python run_tests.py
+```
+
+Execute individual suites directly if desired:
+```bash
+python tests/test_audit_fixes.py
+python tests/test_tables_mode.py
+python tests/test_doc_lang_and_tactile.py
+python tests/test_segmenter.py
+python tests/test_intra_script.py
+python tests/test_grade2_boundary.py
+python tests/test_auto_detect_keyboards.py
 ```
 Or run the complete suite automatically through `build.ps1 -RunTests`.
 
