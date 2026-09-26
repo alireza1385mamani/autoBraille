@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-09-26
+
+### Added
+- **Contracted Braille (Grade 2) Support & Boundary Guarding**:
+  - Full Grade 2 output support with automatic companion Grade 1 fallback mapping (`GRADE2_COMPANION_MAP`) across English (UEB), Arabic, German, French, Spanish, Russian, and more.
+  - **Single-Letter Wordsign Protection**: Isolated letters (such as `b` in `گزینه b`, or in lists/formulas) are guarded from incorrectly expanding to whole-word contractions (e.g., `but` in UEB).
+  - **Technical Syntax & Code Identifier Shielding**: Automatically detects variable names, `snake_case`, `camelCase`, and technical syntax (`user_id`, `print()`), routing them to uncontracted Grade 1 to prevent syntax corruption.
+  - **Numeric Boundary Bleed Prevention**: Inspects prefix context to guarantee adjacent numbers (`123b`) do not bleed into numeric mode contraction anomalies.
+  - **Settings UI Control**: Configurable "Guard Grade 2 contracted braille at script boundaries and isolated words" checkbox in Auto Braille settings with complete gettext localization.
+  - **Comprehensive Test Suite**: Added `tests/test_grade2_boundary.py` with 100% pass coverage across wordsigns, code tokens, companion lookups, and translation engine integration.
+- **3-Tier Multi-Language Architecture & Intra-Script Disambiguation**:
+  - Solved intra-script conflicts for shared scripts (Persian vs Arabic in Arabic script, Ukrainian/Belarusian vs Russian in Cyrillic, Urdu/Kurdish).
+  - Implemented 3-tier disambiguation: Document tags (Tier 1) &rarr; Exclusive lexical marker scoring (Tier 2) &rarr; Character n-gram frequency fallback (Tier 3).
+  - Added dedicated test suite `tests/test_intra_script.py`.
+
+---
+
 ## [1.0.2] - 2026-09-25
 
 ### Fixed

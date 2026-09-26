@@ -1029,3 +1029,89 @@ def detect_intra_script_table(text: str, candidate_tables: List[str]) -> Optiona
 	return best_table
 
 
+GRADE2_COMPANION_MAP: Dict[str, str] = {
+	# English UEB
+	"en-ueb-g2.ctb": "en-ueb-g1.ctb",
+	"en-ueb-chardefs.uti": "en-ueb-g1.ctb",
+	"en-us-g2.ctb": "en-us-g1.ctb",
+	"en-gb-g2.ctb": "en-gb-g1.ctb",
+	# Arabic
+	"ar-ar-g2.ctb": "ar-ar-g1.utb",
+	# German
+	"de-g2.ctb": "de-g1.ctb",
+	"de-g2-detailed.ctb": "de-g1.ctb",
+	# French
+	"fr-bfu-g2.ctb": "fr-bfu-comp8.ctb",
+	"fr-g2.ctb": "fr-bfu-comp8.ctb",
+	# Spanish
+	"es-g2.ctb": "es-g1.ctb",
+	# Italian
+	"it-it-g2.ctb": "it-it-g1.utb",
+	# Portuguese
+	"pt-pt-g2.ctb": "pt-pt-g1.utb",
+	# Russian
+	"ru-g2.ctb": "ru-litbrl.ctb",
+}
+
+
+def is_contracted_table(table_name: str) -> bool:
+	"""Check if a Liblouis table file is a Grade 2 contracted table."""
+	if not table_name:
+		return False
+	base = os.path.basename(table_name).lower()
+	if base in GRADE2_COMPANION_MAP:
+		return True
+	return "-g2" in base or "grade2" in base or "contracted" in base
+
+
+def get_grade1_companion_table(table_name: str) -> Optional[str]:
+	"""Get the uncontracted Grade 1 companion table for a contracted Grade 2 table."""
+	if not table_name:
+		return None
+	base = os.path.basename(table_name).lower()
+	if base in GRADE2_COMPANION_MAP:
+		return GRADE2_COMPANION_MAP[base]
+	# Fallback heuristic: replace -g2 with -g1
+	if "-g2" in base:
+		return base.replace("-g2", "-g1")
+	return None
+
+
+STANDALONE_VALID_WORDS = frozenset({"a", "i", "A", "I"})
+
+
+def is_single_letter_wordsign_candidate(text: str) -> bool:
+	"""Detect if text is an isolated single letter that would accidentally trigger a Grade 2 word-sign.
+
+	In Grade 2 UEB, isolated letters like 'b' (but), 'c' (can), 'x' (it) contract to whole words.
+	When surrounded by foreign text or punctuation, these are variables, shortcuts, or options.
+	"""
+	if not text:
+		return False
+	# Strip neutral punctuation and whitespace: e.g. "(b)" or "c." -> "b" or "c"
+	cleaned = re.sub(r"[^\w]", "", text)
+	if len(cleaned) == 1 and cleaned.isalpha():
+		return cleaned not in STANDALONE_VALID_WORDS
+	return False
+
+
+def is_technical_identifier(text: str) -> bool:
+	"""Detect if text is a programming identifier, variable, URL, or symbol token.
+
+	Technical tokens (e.g. 'file_name', 'user_id', 'CamelCase', 'path/to/file', 'user@domain')
+	should not be corrupted by literary contractions.
+	"""
+	stripped = text.strip()
+	if not stripped:
+		return False
+	# Check for programming symbols: underscores, backslashes, @, $, #, slashes
+	if any(sym in stripped for sym in ("_", "\\", "/", "@", "$", "#", "::", "->")):
+		return True
+	# Check for CamelCase (uppercase letter inside lowercase word, e.g. 'fileName', 'getData')
+	words = stripped.split()
+	for w in words:
+		if len(w) > 2 and any(c.islower() for c in w) and any(c.isupper() for c in w[1:]):
+			return True
+	return False
+
+

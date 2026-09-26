@@ -63,6 +63,7 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 | [X] Enable automatic multi-language braille output translation                  |
 | [X] Automatically sync Perkins braille input with active Windows keyboard layout|
 | [X] Honor document language tags in web and office documents (e.g. HTML, Word)  |
+| [X] Protect isolated letters and code identifiers in Contracted Braille (G2)    |
 |                                                                                 |
 | Tactile indicator for language boundaries: [Dot 8 under first cell...         v] |
 | Primary output braille table:              [Automatic (From NVDA settings)    v] |
@@ -71,6 +72,7 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 | Active Secondary Braille Tables (Auto-Detected):                                |
 | +-----------------------------------------------------------------------------+ |
 | | Persian grade 1 (fa-ir-g1.utb)  —  Input: Persian grade 1                   | |
+| | Unified English Braille Grade 2 (en-ueb-g2.ctb)  —  Input: UEB Grade 2      | |
 | | Russian literary braille (ru-litbrl.ctb)  —  Input: Russian literary        | |
 | +-----------------------------------------------------------------------------+ |
 | [&Add Table...]   [&Configure Table...]   [&Remove Table]                       |
@@ -79,9 +81,20 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 
 ### Adding a Secondary Table
 1. Click **Add Table...**.
-2. Select any Liblouis braille table (e.g., `fa-ir-g1.utb`, `ru-litbrl.ctb`, `he-IL.utb`).
-3. Auto Braille automatically infers the script and pairs the matching Perkins input table.
+2. Select any Liblouis braille table (e.g., `fa-ir-g1.utb`, `en-ueb-g2.ctb`, `ru-litbrl.ctb`, `ar-ar-g1.utb`).
+3. Auto Braille automatically infers the script, pairs the matching Perkins input table, and configures companion table fallback.
 4. Click **OK** &mdash; that's it!
+
+### 🌟 Contracted Braille (Grade 2) & Boundary Guarding
+* **No Accidental Contractions:** In UEB Grade 2, isolated single letters contract to whole words (`b` = "but", `c` = "can", `x` = "it"). Auto Braille automatically guards single letters in mixed text (e.g. `گزینه b`, `کلید c`), routing them through uncontracted Grade 1 companion tables so words like `but` never appear by mistake!
+* **Code & Identifier Protection:** Variables and technical code (e.g. `user_id`, `file_name`, `camelCase`, file paths) are protected against literary contractions.
+* **Numeric Boundary Lookback:** Letters immediately following digits (e.g. `123b`) are protected from numeric bleeding.
+
+### 🌐 3-Tier Multi-Language Architecture
+* **Tier 1 (Cross-Script):** 100% deterministic Unicode script segmentation across all global alphabets.
+* **Tier 2 (Loanword Absorption):** Persian words with Arabic letters (`دایرة‌المعارف`, `نهایة`, `خاصةً`) and English words with accents (`café`, `résumé`, `über`) stay in their native table with zero flapping.
+* **Tier 3 (Intra-Script Disambiguation):** Automatically distinguishes between languages using the same alphabet (Persian vs. Arabic; English vs. French/German) using document language markup (`lang="ar"`), Windows keyboard layouts, and grammatical stop-word phrase density.
+* **Non-Latin Primary Defaults:** Persian, Arabic, and Russian primary users automatically get English UEB as their secondary table out of the box!
 
 ---
 
@@ -121,12 +134,14 @@ Or with PowerShell on Windows:
 
 ### Running Automated Tests
 
-Run the complete 4-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, and document tags:
+Run the complete 6-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, and Grade 2 boundary guarding:
 ```bash
 py.exe tests/test_audit_fixes.py
 py.exe tests/test_tables_mode.py
 py.exe tests/test_features_3_4.py
 py.exe tests/test_segmenter.py
+py.exe tests/test_intra_script.py
+py.exe tests/test_grade2_boundary.py
 ```
 Or run all tests with the PowerShell build script:
 ```powershell

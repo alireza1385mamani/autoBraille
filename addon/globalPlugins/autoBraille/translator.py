@@ -281,8 +281,11 @@ def resolve_segment_table(
 	script: str,
 	active_tables: List[str],
 	doc_lang_spans: Optional[List[Tuple[int, int, str]]] = None,
+	full_inbuf: str = "",
 ) -> List[str]:
 	"""Determine the exact table chain for a segment based on doc markup, candidate tables, and text."""
+	target_chain: Optional[List[str]] = None
+
 	if doc_lang_spans:
 		for s_start, s_end, lang in doc_lang_spans:
 			if lang and (s_start <= start_idx < s_end or s_start < end_idx <= s_end):
@@ -290,9 +293,39 @@ def resolve_segment_table(
 				if doc_tbl:
 					tbl_script = scripts_data.resolve_table_to_script(doc_tbl)
 					if tbl_script and tbl_script.id == script:
-						return get_table_chain_for_file(doc_tbl)
+						target_chain = get_table_chain_for_file(doc_tbl)
+						break
 
-	return get_script_table_chain(script, active_tables, text_sample=seg_text)
+	if not target_chain:
+		target_chain = get_script_table_chain(script, active_tables, text_sample=seg_text)
+
+	# Boundary Guarding for Grade 2 Contracted Braille
+	cfg = config.conf.get("autoBraille", {})
+	if cfg.get("grade2BoundaryGuard", True) and target_chain:
+		target_file = os.path.basename(target_chain[0]).lower()
+		if scripts_data.is_contracted_table(target_file):
+			needs_g1_fallback = False
+
+			# Guard 1: Single-letter word-sign protection (e.g. 'b' -> 'but', 'c' -> 'can')
+			if scripts_data.is_single_letter_wordsign_candidate(seg_text):
+				needs_g1_fallback = True
+
+			# Guard 2: Technical identifiers, code symbols, paths, and camelCase
+			elif scripts_data.is_technical_identifier(seg_text):
+				needs_g1_fallback = True
+
+			# Guard 3: Numeric mode boundary lookback (e.g. '123b' or '۱۲۳a')
+			elif full_inbuf and start_idx > 0:
+				prev_char = full_inbuf[start_idx - 1]
+				if (prev_char.isdigit() or prev_char in "۰۱۲۳۴۵۶۷۸۹") and seg_text and seg_text[0].isalnum():
+					needs_g1_fallback = True
+
+			if needs_g1_fallback:
+				g1_companion = scripts_data.get_grade1_companion_table(target_file)
+				if g1_companion:
+					return get_table_chain_for_file(g1_companion)
+
+	return target_chain
 
 
 def multi_script_translate(
@@ -328,7 +361,7 @@ def multi_script_translate(
 		seg_script = segments[0][3] if segments else primary_script
 		start_idx = segments[0][1] if segments else 0
 		end_idx = segments[0][2] if segments else len(inbuf)
-		table = resolve_segment_table(inbuf, start_idx, end_idx, seg_script, active_tables, doc_lang_spans)
+		table = resolve_segment_table(inbuf, start_idx, end_idx, seg_script, active_tables, doc_lang_spans, full_inbuf=inbuf)
 		try:
 			cells, b2r, r2b, cur = original_translate(table, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
 			if cells and (seg_script != primary_script or table != primary_chain):
@@ -352,7 +385,7 @@ def multi_script_translate(
 
 	for idx, (seg_text, start_idx, end_idx, script) in enumerate(segments):
 		table = resolve_segment_table(
-			seg_text, start_idx, end_idx, script, active_tables, doc_lang_spans
+			seg_text, start_idx, end_idx, script, active_tables, doc_lang_spans, full_inbuf=inbuf
 		)
 
 		# Local cursor calculation

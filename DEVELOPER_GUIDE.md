@@ -13,10 +13,12 @@ Welcome to the **Auto Braille** developer guide! This document provides an exhau
 5. [Deep Dive: Bi-Directional Perkins Input Auto-Switching](#5-deep-dive-bi-directional-perkins-input-auto-switching)
 6. [Deep Dive: Tactile Boundary Markers](#6-deep-dive-tactile-boundary-markers)
 7. [Deep Dive: Document Language Tag Integration](#7-deep-dive-document-language-tag-integration)
-8. [Adding New Writing Systems & Liblouis Tables](#8-adding-new-writing-systems--liblouis-tables)
-9. [Localization & Internationalization (gettext)](#9-localization--internationalization-gettext)
-10. [Build System & Automated CI/CD](#10-build-system--automated-cicd)
-11. [Test Suites & Quality Assurance](#11-test-suites--quality-assurance)
+8. [Deep Dive: Contracted Braille (Grade 2) & Boundary Guarding](#8-deep-dive-contracted-braille-grade-2--boundary-guarding)
+9. [Deep Dive: 3-Tier Multi-Language Architecture & Intra-Script Disambiguation](#9-deep-dive-3-tier-multi-language-architecture--intra-script-disambiguation)
+10. [Adding New Writing Systems & Liblouis Tables](#10-adding-new-writing-systems--liblouis-tables)
+11. [Localization & Internationalization (gettext)](#11-localization--internationalization-gettext)
+12. [Build System & Automated CI/CD](#12-build-system--automated-cicd)
+13. [Test Suites & Quality Assurance](#13-test-suites--quality-assurance)
 
 ---
 
@@ -238,7 +240,65 @@ Feature 4 retrieves official document language tags from NVDA's `TextInfo` forma
 
 ---
 
-## 8. Adding New Writing Systems & Liblouis Tables
+## 8. Deep Dive: Contracted Braille (Grade 2) & Boundary Guarding
+
+Contracted Braille uses ligatures and abbreviations to shorten words (e.g., in English UEB Grade 2, standalone `b` = "but", `c` = "can", `x` = "it"). In multi-script text, naive string slicing extracts single foreign letters or code identifiers in isolation, causing Liblouis Grade 2 tables to accidentally contract them into full words or corrupt technical identifiers.
+
+Auto Braille implements a **5-Layer Boundary Guarding System**:
+
+```mermaid
+flowchart TD
+    InSegment["Input Segment (e.g. 'b', 'user_id', '123b', 'book')"] --> G2Check{"Target Table is Grade 2?"}
+    G2Check -- "No (Grade 1)" --> NormalG1["Normal Grade 1 Translation"]
+    G2Check -- "Yes (Grade 2)" --> GuardCheck{"Trigger Boundary Guard?"}
+    
+    subgraph Guards ["Boundary Guard Triggers"]
+        GuardCheck -- "Single-Letter Word-Sign ('b', 'c', 'x')" --> FallbackG1["Companion Table Fallback (en-ueb-g1.ctb)"]
+        GuardCheck -- "Technical Identifier ('user_id', 'camelCase')" --> FallbackG1
+        GuardCheck -- "Numeric Lookback (adjacent to digit '123b')" --> FallbackG1
+        GuardCheck -- "Normal Literary Word ('book', 'the')" --> NormalG2["Normal Grade 2 Translation (en-ueb-g2.ctb)"]
+    end
+    
+    FallbackG1 --> Output["Literal Braille Cell Output (No Glitches)"]
+    NormalG2 --> Output
+    NormalG1 --> Output
+```
+
+### 1. Companion Table Resolution (`GRADE2_COMPANION_MAP`)
+Every Grade 2 contracted table is paired with its Grade 1 uncontracted counterpart in `scripts_data.py`:
+* `en-ueb-g2.ctb` &harr; `en-ueb-g1.ctb`
+* `ar-ar-g2.ctb` &harr; `ar-ar-g1.utb`
+* `de-g2.ctb` &harr; `de-g1.ctb`
+* `es-g2.ctb` &harr; `es-g1.ctb`
+* `fr-bfu-g2.ctb` &harr; `fr-bfu-comp8.ctb`
+* `ru-g2.ctb` &harr; `ru-litbrl.ctb`
+
+### 2. Single-Letter Word-Sign Protection (`is_single_letter_wordsign_candidate`)
+When an isolated letter (`b`, `c`, `x`) is flanked by non-Latin text (e.g. `گزینه b`), Auto Braille intercepts the token and routes it through the Grade 1 companion table. The reader sees the letter `b`, never the word `but`!
+
+### 3. Code & Identifier Guard (`is_technical_identifier`)
+Tokens containing programming symbols (`_`, `\`, `/`, `@`, `$`, `#`) or CamelCase capitalization (e.g. `fileName`, `user_id`) are routed through the companion Grade 1 table to prevent code corruption.
+
+### 4. Numeric Mode Boundary Lookback
+If a Latin segment immediately follows a digit without whitespace (e.g. `123b` or `۱۲۳a`), Auto Braille detects the boundary lookback and translates the letter with Grade 1 to prevent numeric mode bleed.
+
+---
+
+## 9. Deep Dive: 3-Tier Multi-Language Architecture & Intra-Script Disambiguation
+
+To distinguish between languages sharing the same script (e.g. Persian vs. Arabic, or English vs. French/German) without flickering on loanwords, Auto Braille implements a 3-tier hierarchy:
+
+* **Tier 1 (Cross-Script):** 100% deterministic Unicode script segmentation across disjoint alphabets.
+* **Tier 2 (Loanword Absorption):** Persian loanwords with Arabic letters (`دایرة‌المعارف`, `نهایة`, `خاصةً`) and English words with accents (`café`, `résumé`, `über`) stay stably in their primary table.
+* **Tier 3 (Intra-Script Disambiguation):** When multiple tables for the same script are active:
+  1. Document language markup spans (`<span lang="ar">`, `<span lang="fr">`) take top priority.
+  2. Multi-word grammatical clauses with 2+ distinct stop words (e.g. `في`, `من`, `على` for Arabic; `la`, `dans`, `nous` for French) route to the target language's table.
+  3. Single loanwords or ambiguous text remain on the base table with **zero flapping**.
+* **Dynamic Defaults for Non-Latin Primary Users:** When NVDA's primary translation table is Persian (`fa-ir-g1.utb`), Arabic (`ar-ar-g1.utb`), or Russian (`ru-litbrl.ctb`), the secondary table dynamically defaults to **English UEB (`en-ueb-g1.ctb`)**.
+
+---
+
+## 10. Adding New Writing Systems & Liblouis Tables
 
 To register a new writing system, edit `addon/globalPlugins/autoBraille/scripts_data.py`:
 ```python
@@ -268,7 +328,7 @@ Auto Braille's dynamic configuration, GUI dialogs, table-to-script resolution, a
 
 ---
 
-## 9. Localization & Internationalization (gettext)
+## 11. Localization & Internationalization (gettext)
 
 Auto Braille strictly enforces NVDA Add-on Store standards for translatability:
 
@@ -286,14 +346,14 @@ Auto Braille includes a zero-dependency AST parser [generate_pot.py](file:///c:/
 ```bash
 py.exe generate_pot.py
 ```
-This generates `addon/locale/autoBraille.pot` with all 32+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
+This generates `addon/locale/autoBraille.pot` with all 33+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
 
 ### 3. Adding Translated PO Files
 Translators create `addon/locale/<lang>/LC_MESSAGES/autoBraille.po` using POEdit or standard gettext tools. During packaging, `build.py` automatically bundles all compiled catalogs.
 
 ---
 
-## 10. Build System & Automated CI/CD
+## 12. Build System & Automated CI/CD
 
 ### Building via Python (`build.py`)
 Auto Braille utilizes a standalone packaging script:
@@ -315,9 +375,9 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 
 ---
 
-## 11. Test Suites & Quality Assurance
+## 13. Test Suites & Quality Assurance
 
-Auto Braille features a comprehensive 4-suite offline testing framework requiring zero running NVDA instances:
+Auto Braille features a comprehensive 6-suite offline testing framework requiring zero running NVDA instances:
 
 | Suite | File Path | Focus Area |
 | :--- | :--- | :--- |
@@ -325,15 +385,20 @@ Auto Braille features a comprehensive 4-suite offline testing framework requirin
 | **Tables & Sync** | `tests/test_tables_mode.py` | Automatic vs. explicit primary tables, secondary table detection, and Perkins layout-to-table resolution across Windows LANGIDs. |
 | **Features 3 & 4** | `tests/test_features_3_4.py` | Document language tag parsing, HTML/Word `lang` validation, tactile boundary indicators (`dot8_first`, `dot7_first`, `dots78_secondary`), spoken/braille announcements, and settings panel GUI. |
 | **Segmenter** | `tests/test_segmenter.py` | Unicode script segmentation across Persian, Russian, Hebrew, Greek, and English sentences with neutral gap absorption. |
+| **Intra-Script** | `tests/test_intra_script.py` | 3-tier language detection, exclusive lexical marker scoring (Persian vs Arabic, Ukrainian/Belarusian vs Russian, Urdu/Kurdish), n-gram frequency fallback, and document tag override. |
+| **Grade 2 Boundary** | `tests/test_grade2_boundary.py` | Contracted Braille companion mapping, boundary guarding for single-letter wordsigns (`b` -> `but` prevention), code identifiers (`user_id`), numeric boundaries (`123b`), and cursor routing offset preservation. |
 
 ### Running Unit Tests
-Execute individual suites using the Python Install Manager:
+Execute individual suites using Python:
 ```bash
 py.exe tests/test_audit_fixes.py
 py.exe tests/test_tables_mode.py
 py.exe tests/test_features_3_4.py
 py.exe tests/test_segmenter.py
+py.exe tests/test_intra_script.py
+py.exe tests/test_grade2_boundary.py
 ```
+Or run the complete suite automatically through `build.ps1 -RunTests`.
 
 ### Test Mock Isolation Pattern
 All test suites reuse existing mock modules in `sys.modules` (`sys.modules.get(...)`) rather than blindly overwriting them, guaranteeing clean module state and preventing mock collision during sequential test execution.

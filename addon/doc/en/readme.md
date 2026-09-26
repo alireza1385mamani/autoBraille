@@ -28,8 +28,20 @@
 * **Announce Language at Caret:** Press your assigned shortcut to hear and feel the active character, writing system, and Liblouis table name simultaneously spoken and flashed in braille.
 
 ### 4. Smart Document Language Tag Integration (`lang` tags)
-* In web browsers (Chrome, Edge, Firefox) and Office suites (Word, LibreOffice), official document language tags (`<span lang="fa">`, `<p lang="en">`) are automatically detected and respected.
+* In web browsers (Chrome, Edge, Firefox) and Office suites (Word, LibreOffice), official document language tags (`<span lang="fa">`, `<p lang="en">`, `<span lang="ar">`, `<span lang="fr">`) are automatically detected and respected.
 * **Automatic Script Compatibility Validation:** If text is marked with an incorrect language tag, Auto Braille automatically validates the characters and falls back to the Unicode script detector so text is never garbled!
+
+### 5. Contracted Braille (Grade 2) Support & Boundary Guarding
+* **Full Grade 2 Support:** Configure any secondary or primary table to use Contracted Braille (e.g. `en-ueb-g2.ctb`, `ar-ar-g2.ctb`, `de-g2.ctb`).
+* **Single-Letter Word-Sign Protection:** In Grade 2 UEB, isolated letters contract to whole words (`b` = "but", `c` = "can", `x` = "it"). Auto Braille automatically routes isolated single letters flanked by foreign text or punctuation (e.g. `گزینه b`, `کلید c`) through an uncontracted Grade 1 companion table, preventing accidental word contractions!
+* **Code & Identifier Protection:** Programming variables and technical identifiers (such as `user_id`, `file_name`, `camelCase`, or file paths) are protected from literary contractions so you can read and debug code accurately.
+* **Numeric Boundary Lookback:** Letters immediately following numbers across language boundaries (e.g. `123b` or `۱۲۳a`) are protected from digit-letter bleeding.
+
+### 6. 3-Tier Multi-Language Architecture & Loanword Absorption
+* **Zero Flapping on Loanwords:** Persian words with Arabic letters (e.g. `دایرة‌المعارف`, `نهایة`, `خاصةً`) and English words with accents (`café`, `résumé`, `über`) stay stably in their native table with zero mid-sentence flapping.
+* **Intra-Script Disambiguation:** When both Persian and Arabic, or English and French/German tables are active, multi-word grammatical clauses (e.g. `قال المعلم: في التأني السلامة`) are automatically routed to the correct language using grammatical stop-word phrase density.
+* **Dynamic Defaults for Non-Latin Primary Users:** If your NVDA primary translation table is Persian (`fa-ir-g1.utb`), Arabic (`ar-ar-g1.utb`), or Russian (`ru-litbrl.ctb`), Auto Braille automatically defaults its secondary table to English UEB out of the box!
+* **Specific Language Announcements:** Caret language announcements report the precise language name (e.g. "Persian", "Arabic", "English (Unified)", "French") rather than broad script categories.
 
 ---
 
@@ -43,10 +55,11 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 1. **Enable automatic multi-language braille output translation:** Master toggle for in-line multi-script translation.
 2. **Automatically sync Perkins braille input with active Windows keyboard layout:** Master toggle for real-time Perkins input table switching.
 3. **Honor document language tags in web and office documents:** Prioritize official HTML/Word `lang` tags when accurate.
-4. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
-5. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
-6. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
-7. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table (e.g. `fa-ir-g1.utb`, `ru-litbrl.ctb`, `he-IL.utb`). Auto Braille automatically infers the script and pairs the matching Perkins input table.
+4. **Protect isolated letters and code identifiers in Contracted Braille (Grade 2):** Safeguards single-letter variables and technical identifiers against accidental contractions.
+5. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
+6. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
+7. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
+8. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table (e.g. `fa-ir-g1.utb`, `en-ueb-g2.ctb`, `ru-litbrl.ctb`, `ar-ar-g1.utb`). Auto Braille automatically infers the script and pairs the matching Perkins input table.
 
 ---
 

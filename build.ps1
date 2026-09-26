@@ -34,6 +34,7 @@ if ($RunTests) {
         & $pythonCmd.Source tests/test_features_3_4.py
         & $pythonCmd.Source tests/test_segmenter.py
         & $pythonCmd.Source tests/test_intra_script.py
+        & $pythonCmd.Source tests/test_grade2_boundary.py
         Write-Host "All tests passed!" -ForegroundColor Green
     } else {
         Write-Warning "Python not found on PATH. Skipping test execution."
