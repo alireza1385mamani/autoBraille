@@ -32,7 +32,7 @@ try:
 except ImportError:
 	import scripts_data, translator
 
-# Configure explicit 64-bit ctypes prototypes for Windows user32 APIs
+# Configure explicit 64-bit ctypes prototypes for Windows user32 and kernel32 APIs
 try:
 	user32 = ctypes.windll.user32
 	user32.GetForegroundWindow.restype = wintypes.HWND
@@ -49,6 +49,13 @@ try:
 	user32.GetKeyboardLayoutList.argtypes = [wintypes.INT, ctypes.POINTER(hkl_type)]
 except Exception:
 	user32 = getattr(ctypes.windll, "user32", None)
+
+try:
+	kernel32 = ctypes.windll.kernel32
+	kernel32.GetLocaleInfoW.restype = wintypes.INT
+	kernel32.GetLocaleInfoW.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.LPWSTR, wintypes.INT]
+except Exception:
+	kernel32 = getattr(ctypes.windll, "kernel32", None)
 
 LEGACY_INPUT_ENABLE_KEYS: Dict[str, str] = {
 	"arabic_persian": "enableArabicPersianInput",
@@ -316,8 +323,10 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 		exact_tbl = scripts_data.LANG_ID_TO_TABLE.get(lang_id & 0x03FF)
 
 	if exact_tbl:
+		exact_code = scripts_data.get_table_lang_code(exact_tbl)
+		prim_code = scripts_data.get_table_lang_code(primary_tbl)
 		# If it matches primary table, return primary input table
-		if exact_tbl == primary_tbl or exact_tbl.split("-")[0] == primary_tbl.split("-")[0]:
+		if exact_tbl == primary_tbl or exact_code == prim_code:
 			primary_configured = cfg.get("primaryInputTable", "auto")
 			if not primary_configured or primary_configured == "auto":
 				info = scripts_data.get_script_info(primary_script)
@@ -327,7 +336,7 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 
 		# If it matches an active secondary table, use that table's input mapping
 		for tbl in sec_tables:
-			if tbl == exact_tbl or tbl.split("-")[0] == exact_tbl.split("-")[0]:
+			if tbl == exact_tbl or scripts_data.get_table_lang_code(tbl) == exact_code:
 				inp_tbl = cfg.get(f"inputTable_{tbl}")
 				if not inp_tbl or inp_tbl == "auto":
 					inp_tbl = tbl

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: autoBraille 1.0.3\n"
 "Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\n"
-"POT-Creation-Date: 2026-09-26 13:01+0000\n"
+"POT-Creation-Date: 2026-09-26 13:22+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -234,17 +234,17 @@ msgstr ""
 msgid "Configure Braille Table — %s"
 msgstr ""
 
-#. Translators: Confirmation button in setup wizard to add selected tables
-#: addon/globalPlugins/autoBraille/language_dialogs.py:307
-msgid "&Add Selected Tables"
-msgstr ""
-
 #. Translators: Note shown in wizard when some detected keyboards have no matching Liblouis table in NVDA
 #: addon/globalPlugins/autoBraille/language_dialogs.py:298
 msgid "Note: No matching Liblouis braille table found in this NVDA installation for: %s"
 msgstr ""
 
+#. Translators: Confirmation button in setup wizard to add selected tables
+#: addon/globalPlugins/autoBraille/language_dialogs.py:309
+msgid "&Add Selected Tables"
+msgstr ""
+
 #. Translators: Announcement when input braille table is switched
-#: addon/globalPlugins/autoBraille/input_sync.py:516
+#: addon/globalPlugins/autoBraille/input_sync.py:525
 msgid "Braille input: %s"
 msgstr ""
