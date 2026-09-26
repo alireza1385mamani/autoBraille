@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autoBraille"
-version = "1.0.3"
+version = "1.0.4"
 description = "Universal multi-script braille translation and Perkins keyboard input auto-switching for NVDA."
 readme = "README.md"
 authors = [

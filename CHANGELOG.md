@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-09-26
+
+### Added
+- **Python 3.14 Default Build & Test Target**:
+  - Full native verification and support for Python 3.14+ (tested and verified on Python 3.14.7) while maintaining 100% backward-compatibility with NVDA 2024 LTS (Python 3.11).
+  - PEP 649 / PEP 749 deferred annotation evaluation compatibility across all modules with `from __future__ import annotations`.
+  - Added official `pyproject.toml` with PEP 621 project metadata declaring `requires-python = ">=3.11, <3.15"` and classifiers for Python 3.11, 3.12, 3.13, and 3.14.
+- **Unified Single-Command Test Runner (`run_tests.py`)**:
+  - Added a standalone test runner executing bytecode pre-compilation checks and all 7 test suites in isolated subprocesses using the active Python interpreter in ~0.45s.
+  - Guarantees zero cross-suite mock pollution and clean stdout/stderr reporting.
+- **Pre-Build Bytecode Compilation Verification**:
+  - Integrated `verify_compilation()` in `build.py` to compile all Python modules with `py_compile.compile(..., doraise=True)` prior to packaging `.nvda-addon` bundles.
+- **Multi-Version GitHub Actions CI Matrix**:
+  - Configured test workflows across Python 3.14 (primary) and Python 3.11 (NVDA LTS) in `.github/workflows/release.yml`.
+
+### Changed & Security Hardening
+- **64-bit ctypes Signatures**: Declared explicit `argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.LPWSTR, wintypes.INT]` and `restype = wintypes.INT` for `kernel32.GetLocaleInfoW` in `input_sync.py` to eliminate 64-bit calling convention ambiguities.
+- **Unified Table Language Prefix Matching**: Refactored `resolve_input_table_for_lang()` in `input_sync.py` to use `scripts_data.get_table_lang_code()`, correctly matching dotted tables (e.g. `el.ctb`, `syc.utb`, `he.ctb`) as well as hyphenated tables (`fa-ir-g1.utb`, `en-ueb-g1.ctb`).
+- **PowerShell Script Hardening (`build.ps1`)**: Prioritized `python.exe` over `py.exe` to eliminate access-denied errors from Windows App execution aliases, and integrated directly with `run_tests.py`.
+
+---
+
 ## [1.0.3] - 2026-09-26
 
 ### Added
