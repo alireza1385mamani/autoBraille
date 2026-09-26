@@ -31,7 +31,7 @@ if ($RunTests) {
     if ($pythonCmd) {
         & $pythonCmd.Source tests/test_audit_fixes.py
         & $pythonCmd.Source tests/test_tables_mode.py
-        & $pythonCmd.Source tests/test_features_3_4.py
+        & $pythonCmd.Source tests/test_doc_lang_and_tactile.py
         & $pythonCmd.Source tests/test_segmenter.py
         & $pythonCmd.Source tests/test_intra_script.py
         & $pythonCmd.Source tests/test_grade2_boundary.py

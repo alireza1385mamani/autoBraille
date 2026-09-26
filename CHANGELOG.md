@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented 3-tier disambiguation: Document tags (Tier 1) &rarr; Exclusive lexical marker scoring (Tier 2) &rarr; Character n-gram frequency fallback (Tier 3).
   - Added dedicated test suite `tests/test_intra_script.py`.
 
+### Changed
+- **Developer Test Suite Renaming**: Renamed legacy test file `tests/test_features_3_4.py` to `tests/test_doc_lang_and_tactile.py` for clarity, self-documentation, and maintainability across the testing pipeline, CI workflows, and developer documentation.
+
 ---
 
 ## [1.0.2] - 2026-09-25

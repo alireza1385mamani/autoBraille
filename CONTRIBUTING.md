@@ -47,8 +47,10 @@ Please maintain a respectful, welcoming, and inclusive environment for all contr
    ```bash
    py.exe tests/test_audit_fixes.py
    py.exe tests/test_tables_mode.py
-   py.exe tests/test_features_3_4.py
+   py.exe tests/test_doc_lang_and_tactile.py
    py.exe tests/test_segmenter.py
+   py.exe tests/test_intra_script.py
+   py.exe tests/test_grade2_boundary.py
    ```
    Or run all tests with the PowerShell build script:
    ```powershell

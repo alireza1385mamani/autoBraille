@@ -196,7 +196,7 @@ assert scripts_data.is_script_compatible("سلام دنیا", "latin") == False 
 assert scripts_data.is_script_compatible("12345 ,.?!", "latin") == True            # Neutral
 print("All script compatibility validations passed!")
 
-print("\n=== 2. Testing Document Language Tag Segmentation (Feature 4) ===")
+print("\n=== 2. Testing Document Language Tag Segmentation ===")
 # Text with accurate doc tags
 text = "Hello سلام world"
 doc_spans = [(0, 6, "en"), (6, 11, "fa"), (11, 16, "en")]
@@ -216,7 +216,7 @@ assert len(segs2) == 1
 assert segs2[0][3] == "arabic_persian", f"Expected arabic_persian fallback, got {segs2[0][3]}"
 print("Document language segmentation and fallback passed!")
 
-print("\n=== 3. Testing Tactile Boundary Indicators (Feature 3) ===")
+print("\n=== 3. Testing Tactile Boundary Indicators ===")
 # Mock original_translate to return cell values based on character length
 def mock_translate(table, inbuf, typeform=None, mode=0, cursorPos=None):
     cells = [1] * len(inbuf) # Each char gets cell value 1
@@ -260,7 +260,7 @@ cells7, _, _, _ = translator.multi_script_translate(
 assert cells7[3] == 1 | 0x40, f"Expected cell 3 to have dot 7 (65), got {cells7[3]}"
 print("Tactile boundary markers (dot8, dot7, dots78) verified successfully!")
 
-print("\n=== 4. Testing Spoken & Braille Flashed Announcement (Feature 3) ===")
+print("\n=== 4. Testing Spoken & Braille Flashed Announcement ===")
 plugin = autoBraille.GlobalPlugin.__new__(autoBraille.GlobalPlugin)
 
 # Mock caret on a Persian character
@@ -321,5 +321,8 @@ panel = autoBraille.AutoBrailleSettingsPanel.__new__(autoBraille.AutoBrailleSett
 panel.makeSettings(DummyControl())
 print("AutoBrailleSettingsPanel.makeSettings() executed without UnboundLocalError!")
 
-print("\nALL FEATURE 3 AND FEATURE 4 TESTS PASSED 100%!")
+print("\n=======================================================")
+print("  ALL DOC LANG AND TACTILE TESTS PASSED 100%!         ")
+print("=======================================================")
+
 

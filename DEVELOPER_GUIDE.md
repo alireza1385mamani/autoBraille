@@ -383,7 +383,7 @@ Auto Braille features a comprehensive 6-suite offline testing framework requirin
 | :--- | :--- | :--- |
 | **Audit Fixes** | `tests/test_audit_fixes.py` | 64-bit Win32 pointer types, 132 language mappings, Georgian prefix matching, gettext fallbacks, atomic numbers, single-segment tactile pins, brace formatting in caret announcement, and monkey-patch idempotency. |
 | **Tables & Sync** | `tests/test_tables_mode.py` | Automatic vs. explicit primary tables, secondary table detection, and Perkins layout-to-table resolution across Windows LANGIDs. |
-| **Features 3 & 4** | `tests/test_features_3_4.py` | Document language tag parsing, HTML/Word `lang` validation, tactile boundary indicators (`dot8_first`, `dot7_first`, `dots78_secondary`), spoken/braille announcements, and settings panel GUI. |
+| **Doc Lang & Tactile** | `tests/test_doc_lang_and_tactile.py` | Document language tag parsing, HTML/Word `lang` validation, tactile boundary indicators (`dot8_first`, `dot7_first`, `dots78_secondary`), spoken/braille announcements, and settings panel GUI. |
 | **Segmenter** | `tests/test_segmenter.py` | Unicode script segmentation across Persian, Russian, Hebrew, Greek, and English sentences with neutral gap absorption. |
 | **Intra-Script** | `tests/test_intra_script.py` | 3-tier language detection, exclusive lexical marker scoring (Persian vs Arabic, Ukrainian/Belarusian vs Russian, Urdu/Kurdish), n-gram frequency fallback, and document tag override. |
 | **Grade 2 Boundary** | `tests/test_grade2_boundary.py` | Contracted Braille companion mapping, boundary guarding for single-letter wordsigns (`b` -> `but` prevention), code identifiers (`user_id`), numeric boundaries (`123b`), and cursor routing offset preservation. |
@@ -393,7 +393,7 @@ Execute individual suites using Python:
 ```bash
 py.exe tests/test_audit_fixes.py
 py.exe tests/test_tables_mode.py
-py.exe tests/test_features_3_4.py
+py.exe tests/test_doc_lang_and_tactile.py
 py.exe tests/test_segmenter.py
 py.exe tests/test_intra_script.py
 py.exe tests/test_grade2_boundary.py
