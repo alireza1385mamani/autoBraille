@@ -233,6 +233,9 @@ def get_script_table_chain(
 	return get_table_chain_for_file(target)
 
 
+last_active_language: str = "en"
+
+
 def segment_with_doc_langs(
 	inbuf: str,
 	doc_lang_spans: Optional[List[Tuple[int, int, str]]],
@@ -241,6 +244,9 @@ def segment_with_doc_langs(
 	active_latin_tables: Optional[List[str]] = None,
 	detect_latin_sub_languages: bool = True,
 	primary_table: str = "en-ueb-g1.ctb",
+	detect_math: bool = False,
+	math_table: str = "en-ueb-math.ctb",
+	custom_dictionary: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Tuple[str, int, int, str]]:
 	"""Segment text respecting official document language tags when accurate, falling back to script detection."""
 	if not inbuf:
@@ -253,6 +259,9 @@ def segment_with_doc_langs(
 			active_latin_tables=active_latin_tables,
 			detect_latin_sub_languages=detect_latin_sub_languages,
 			primary_table=primary_table,
+			detect_math=detect_math,
+			math_table=math_table,
+			custom_dictionary=custom_dictionary,
 		)
 
 	text_len = len(inbuf)
@@ -286,6 +295,9 @@ def segment_with_doc_langs(
 				active_latin_tables=active_latin_tables,
 				detect_latin_sub_languages=detect_latin_sub_languages,
 				primary_table=primary_table,
+				detect_math=detect_math,
+				math_table=math_table,
+				custom_dictionary=custom_dictionary,
 			)
 			for sub_text, sub_start, sub_end, sub_script in sub_segs:
 				tagged_segments.append((sub_text, start + sub_start, start + sub_end, sub_script, None))
@@ -318,7 +330,17 @@ def resolve_segment_table(
 	"""Determine the exact table chain for a segment based on doc markup, candidate tables, and text."""
 	target_chain: Optional[List[str]] = None
 
-	if script.startswith("latin:"):
+	if script.startswith("custom:"):
+		tbl_name = script.split(":", 1)[1]
+		target_chain = get_table_chain_for_file(tbl_name)
+	elif script.startswith("math:"):
+		tbl_name = script.split(":", 1)[1]
+		target_chain = get_table_chain_for_file(tbl_name)
+	elif script == "math":
+		cfg = config.conf.get("autoBraille", {})
+		tbl_name = cfg.get("mathTable", "en-ueb-math.ctb")
+		target_chain = get_table_chain_for_file(tbl_name)
+	elif script.startswith("latin:"):
 		tbl_name = script.split(":", 1)[1]
 		target_chain = get_table_chain_for_file(tbl_name)
 
@@ -335,9 +357,9 @@ def resolve_segment_table(
 	if not target_chain:
 		target_chain = get_script_table_chain(script, active_tables, text_sample=seg_text)
 
-	# Boundary Guarding for Grade 2 Contracted Braille
+	# Boundary Guarding for Grade 2 Contracted Braille (exclude math and custom tables)
 	cfg = config.conf.get("autoBraille", {})
-	if cfg.get("grade2BoundaryGuard", True) and target_chain:
+	if not script.startswith("math") and not script.startswith("custom") and cfg.get("grade2BoundaryGuard", True) and target_chain:
 		target_file = os.path.basename(target_chain[0]).lower()
 		if scripts_data.is_contracted_table(target_file):
 			needs_g1_fallback = False
@@ -374,12 +396,18 @@ def multi_script_translate(
 	doc_lang_spans: Optional[List[Tuple[int, int, str]]] = None,
 ) -> Tuple[List[int], List[int], List[int], Optional[int]]:
 	"""Translate mixed-script text by segmenting and re-mapping cursor and routing positions."""
+	global last_active_language
 	primary_script = get_primary_script(active_tables)
 	enabled_scripts = get_enabled_scripts(active_tables)
 	cfg_ab = config.conf.get("autoBraille", {})
 	honor_doc = cfg_ab.get("honorDocumentLang", True)
 	tactile_marker = cfg_ab.get("tactileMarker", "none")
 	detect_latin_sub = cfg_ab.get("detectLatinSubLanguages", True)
+	detect_math = cfg_ab.get("detectMath", True)
+	math_table = cfg_ab.get("mathTable", "en-ueb-math.ctb")
+	raw_custom_dict = cfg_ab.get("customDictionary", "")
+	custom_dict = scripts_data.parse_custom_dictionary(raw_custom_dict)
+
 	primary_chain = get_script_table_chain(primary_script, active_tables)
 	primary_table = get_primary_table(active_tables)
 	active_latin_tables = get_active_latin_tables(active_tables)
@@ -394,6 +422,9 @@ def multi_script_translate(
 				active_latin_tables=active_latin_tables,
 				detect_latin_sub_languages=detect_latin_sub,
 				primary_table=primary_table,
+				detect_math=detect_math,
+				math_table=math_table,
+				custom_dictionary=custom_dict,
 			)
 		else:
 			segments = segmenter.segment_text(
@@ -403,10 +434,26 @@ def multi_script_translate(
 				active_latin_tables=active_latin_tables,
 				detect_latin_sub_languages=detect_latin_sub,
 				primary_table=primary_table,
+				detect_math=detect_math,
+				math_table=math_table,
+				custom_dictionary=custom_dict,
 			)
 	except Exception:
 		log.warning("Auto Braille segmentation failed; falling back to single table", exc_info=True)
 		return original_translate(active_tables, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
+
+	# Update last_active_language based on cursor position or first segment
+	if cursorPos is not None and segments:
+		active_lang = segments[0][3]
+		for _, s_start, s_end, s_tag in segments:
+			if s_start <= cursorPos <= s_end:
+				active_lang = s_tag
+				break
+		last_active_language = active_lang
+	elif segments:
+		last_active_language = segments[0][3]
+	else:
+		last_active_language = primary_script
 
 	if len(segments) <= 1:
 		seg_script = segments[0][3] if segments else primary_script

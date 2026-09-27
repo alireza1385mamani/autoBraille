@@ -17,10 +17,14 @@ Welcome to the **Auto Braille** developer guide! This document provides an exhau
 9. [Deep Dive: 3-Tier Multi-Language Architecture & Intra-Script Disambiguation](#9-deep-dive-3-tier-multi-language-architecture--intra-script-disambiguation)
 10. [Deep Dive: One-Click Setup Wizard & Windows Keyboard Detection](#10-deep-dive-one-click-setup-wizard--windows-keyboard-detection)
 11. [Deep Dive: Latin-Script Sub-Language Diacritic Detection](#11-deep-dive-latin-script-sub-language-diacritic-detection)
-12. [Adding New Writing Systems & Liblouis Tables](#12-adding-new-writing-systems--liblouis-tables)
-13. [Localization & Internationalization (gettext)](#13-localization--internationalization-gettext)
-14. [Build System & Automated CI/CD](#14-build-system--automated-cicd)
-15. [Test Suites & Quality Assurance](#15-test-suites--quality-assurance)
+12. [Deep Dive: Math & STEM Auto-Detection](#12-deep-dive-math--stem-auto-detection)
+13. [Deep Dive: Hardware Status Cell Language Indicators](#13-deep-dive-hardware-status-cell-language-indicators)
+14. [Deep Dive: App-Specific & Profile-Aware Braille Switching](#14-deep-dive-app-specific--profile-aware-braille-switching)
+15. [Deep Dive: Custom User Lexicon / Dictionary Overrides](#15-deep-dive-custom-user-lexicon--dictionary-overrides)
+16. [Adding New Writing Systems & Liblouis Tables](#16-adding-new-writing-systems--liblouis-tables)
+17. [Localization & Internationalization (gettext)](#17-localization--internationalization-gettext)
+18. [Build System & Automated CI/CD](#18-build-system--automated-cicd)
+19. [Test Suites & Quality Assurance](#19-test-suites--quality-assurance)
 
 ---
 
@@ -382,7 +386,98 @@ Transitions between English UEB Grade 2 and foreign Latin tables are protected b
 
 ---
 
-## 12. Adding New Writing Systems & Liblouis Tables
+---
+
+## 12. Deep Dive: Math & STEM Auto-Detection
+
+### The Problem
+STEM professionals, researchers, and students reading technical documents encounter mathematical notation in two primary forms:
+1. **Delimited LaTeX Expressions:** e.g. `$x^2 + 5$`, `$$\int_0^1 x dx$$`, `\(f(x)\)`, `\[\frac{a}{b}\]`.
+2. **Plain-Text Mathematical Notation:** e.g. `f(x) = 2x + 1`, `E = mc^2`, `y = mx + b`, `a <= b`.
+
+Standard literary braille tables misinterpret mathematical symbols:
+* Lowercase letters following numbers may trigger unwanted Grade 2 contractions or number-sign bleeding.
+* Superscripts (`^`), subscripts (`_`), Greek variables (`\alpha`, `\theta`, `\pi`), and mathematical operators (`=`, `<=`, `>=`, `!=`) get garbled into unrelated punctuation cells.
+
+### The Auto Braille Solution
+Auto Braille implements a **dual-pass priority scanner**:
+1. **Sub-Microsecond Candidate Filter:** `has_math_candidate(text)` searches for mathematical operator characters or LaTeX commands in `< 0.25 µs`. Literary text immediately skips math extraction.
+2. **LaTeX Delimiter Extraction:** `LATEX_MATH_PATTERN` extracts balanced delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`).
+   - **Currency Collision Guard:** Expressions like `$50` or `$10.99` are explicitly rejected by negative lookaheads and regex checks (`^\$\d+(?:\.\d+)?\$$`).
+3. **Plain Equation Parsing:** `PLAIN_MATH_PATTERN` matches function definitions (`f(x) = ...`) and operator equations (`a <= b`, `E = mc^2`).
+   - **Trailing Sentence Punctuation Detachment:** Sentence terminators (`.`, `,`, `;`, `:`, `!`, `?`) immediately adjacent to the equation are stripped from the math span, guaranteeing that literary punctuation remains in the surrounding literary table.
+4. **Dedicated Math Table Routing:** Formulas are tagged with `math:<mathTable>` and translated using UEB Technical Math (`en-ueb-math.ctb`) or Nemeth Code (`nemeth.ctb`).
+5. **Contracted Word-Sign Protection:** In `resolve_segment_table()`, math segments are explicitly excluded from Grade 2 single-letter wordsign fallback.
+
+---
+
+## 13. Deep Dive: Hardware Status Cell Language Indicators
+
+### Hardware Background
+Many 40-cell, 60-cell, and 80-cell desktop and portable braille displays (e.g. HIMS Braille Edge 40, Freedom Scientific Focus 40/80, HumanWare Brailliant BI, Orbit Reader) feature 2 to 4 **physical status cells** separated from the primary braille line. Traditionally, these display cursor column coordinates or tethering modes.
+
+### Tactile Language Indicator System
+Auto Braille dynamically writes a 2-letter tactile language code into the hardware status cells:
+* `⠢⠝` (`en`): English / Latin
+* `⠋⠁` (`fa`): Persian
+* `⠙⠑` (`de`): German
+* `⠋⠗` (`fr`): French
+* `⠗⠥` (`ru`): Russian
+* `⠑⠎` (`es`): Spanish
+* `⠍⠁` (`ma`): Math & STEM formula
+
+### Operational Modes
+* **Disabled (`none`):** Status cells remain under default NVDA control.
+* **Current language at cursor (`current`):** Dynamically updates as the reading cursor crosses language and formula boundaries.
+* **Primary language (`primary`):** Continuously displays the user's primary braille language.
+
+### Driver & Hardware Safety
+* Before any status cell update, Auto Braille queries `getattr(braille.handler.display, "numStatusCells", 0)`. If `< 2` (such as on 14-cell or 20-cell displays without status cells), the operation is safely bypassed.
+
+---
+
+## 14. Deep Dive: App-Specific & Profile-Aware Braille Switching
+
+NVDA allows users to associate Configuration Profiles with specific applications (e.g. a programming profile for VS Code, a word processing profile for Microsoft Word).
+
+### Configuration Profile Hook
+Auto Braille hooks NVDA's profile event system:
+```python
+if hasattr(config, "post_configProfileSwitch"):
+    config.post_configProfileSwitch.register(self.onConfigProfileSwitch)
+```
+Upon a profile switch:
+1. `input_sync.invalidate_cache()` clears keyboard layout caches.
+2. `translator._table_chain_cache.clear()` and `segmenter.clear_regex_cache()` invalidate compiled table chains and regex scanners.
+3. Perkins input table is immediately re-synchronized with the active application's layout.
+4. `braille.handler.handleGainFocus(api.getFocusObject())` refreshes the physical display.
+5. In `terminate()`, the hook is cleanly unregistered.
+
+---
+
+## 15. Deep Dive: Custom User Lexicon / Dictionary Overrides
+
+### The Problem
+Advanced braille users and STEM readers often require individual words or acronyms to route to specific tables regardless of script (e.g. `Python` in computer science textbooks rendered in Computer Braille, or specific foreign names locked to a particular table).
+
+### Implementation
+1. **JSON Serialization:** Rules are stored as validated JSON in `config.conf["autoBraille"]["customDictionary"]`:
+   ```json
+   [{"pattern": "Python", "table": "en-ueb-g2.ctb", "case_sensitive": false}]
+   ```
+2. **Word Boundary Locking:** Regex patterns automatically enforce word boundaries:
+   ```python
+   prefix = r"(?<!\w)" if pat[0].isalnum() else ""
+   suffix = r"(?!\w)" if pat[-1].isalnum() else ""
+   regex = re.compile(f"{prefix}{re.escape(pat)}{suffix}", flags)
+   ```
+   This prevents short patterns (like `in`) from matching inside other words (like `terminal` or `morning`).
+3. **Priority Hierarchy:**
+   `Custom Dictionary Overrides` > `Math & STEM Formulas` > `Unicode Script & Sub-Language`.
+
+---
+
+## 16. Adding New Writing Systems & Liblouis Tables
 
 To register a new writing system, edit `addon/globalPlugins/autoBraille/scripts_data.py`:
 ```python
@@ -412,7 +507,7 @@ Auto Braille's dynamic configuration, GUI dialogs, table-to-script resolution, a
 
 ---
 
-## 13. Localization & Internationalization (gettext)
+## 17. Localization & Internationalization (gettext)
 
 Auto Braille strictly enforces NVDA Add-on Store standards for translatability:
 
@@ -437,7 +532,7 @@ Translators create `addon/locale/<lang>/LC_MESSAGES/autoBraille.po` using POEdit
 
 ---
 
-## 14. Build System & Automated CI/CD
+## 18. Build System & Automated CI/CD
 
 ### Building via Python (`build.py`)
 ### Python Version Support (Python 3.14 Default & 3.11 Backward Compatibility)
@@ -448,7 +543,7 @@ Auto Braille utilizes a standalone packaging script:
 python build.py
 ```
 This automatically verifies bytecode compilation across all source modules with `py_compile`, inspects `addon/manifest.ini`, excludes bytecode (`.pyc`, `__pycache__`) and development files, and packages a clean distributable archive:
-`dist/autoBraille-1.0.5.nvda-addon`
+`dist/autoBraille-1.0.6.nvda-addon`
 
 ### Building via PowerShell (`build.ps1`)
 On Windows, you can package and optionally run all tests in one step:
@@ -458,13 +553,13 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 
 ### GitHub Actions CI/CD (`.github/workflows/release.yml`)
 * Pushes and PRs on `main` execute unit tests across a matrix of Windows runners testing **Python 3.14** and **Python 3.11**.
-* Pushing a version tag (`v*`, e.g. `v1.0.5`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
+* Pushing a version tag (`v*`, e.g. `v1.0.6`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
 
 ---
 
-## 15. Test Suites & Quality Assurance
+## 19. Test Suites & Quality Assurance
 
-Auto Braille features a comprehensive 8-suite offline testing framework requiring zero running NVDA instances:
+Auto Braille features a comprehensive 9-suite offline testing framework requiring zero running NVDA instances:
 
 | Suite | File Path | Focus Area |
 | :--- | :--- | :--- |
@@ -476,10 +571,11 @@ Auto Braille features a comprehensive 8-suite offline testing framework requirin
 | **Grade 2 Boundary** | `tests/test_grade2_boundary.py` | Contracted Braille companion mapping, boundary guarding for single-letter wordsigns (`b` -> `but` prevention), code identifiers (`user_id`), numeric boundaries (`123b`), and cursor routing offset preservation. |
 | **Auto-Detect Keyboards** | `tests/test_auto_detect_keyboards.py` | 64-bit safe `GetKeyboardLayoutList`, read-only registry sanitization, 3-tier dialect resolution, variant deduplication, primary table protection, Liblouis catalog validation, and wizard UI integration. |
 | **Latin Sub-Languages** | `tests/test_latin_sub_languages.py` | Sub-microsecond pure ASCII fast path (< 0.35 µs), German atomic word locking (`Kühlschrank`, `Straße`), French accents/ligatures (`cœur`, `français`), Turkish dotless `ı`/dotted `İ` preservation without case-folding corruption, Spanish/Scandinavian diacritic routing, English loanword stability (`café`), and 3-tier shared disambiguation. |
+| **New Features** | `tests/test_new_features.py` | Math & STEM LaTeX delimiters, plain formula parsing, currency collision guarding, hardware status cell tactile language codes, app-specific profile switching, unassigned display gesture cycling, and custom dictionary overrides. |
 
 ### Running Unit Tests
 
-Run all 8 test suites along with bytecode compilation checks in a single command using the unified test runner:
+Run all 9 test suites along with bytecode compilation checks in a single command using the unified test runner:
 ```bash
 python run_tests.py
 ```
@@ -494,6 +590,7 @@ python tests/test_intra_script.py
 python tests/test_grade2_boundary.py
 python tests/test_auto_detect_keyboards.py
 python tests/test_latin_sub_languages.py
+python tests/test_new_features.py
 ```
 Or run the complete suite automatically through `build.ps1 -RunTests`.
 

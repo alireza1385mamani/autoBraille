@@ -35,7 +35,14 @@ import ui
 import wx
 
 from . import input_sync
-from .language_dialogs import AddTableDialog, EditTableDialog, AddLanguageDialog, EditLanguageDialog, AutoDetectWizardDialog
+from .language_dialogs import (
+	AddTableDialog,
+	EditTableDialog,
+	AddLanguageDialog,
+	EditLanguageDialog,
+	AutoDetectWizardDialog,
+	CustomDictionaryDialog,
+)
 from . import scripts_data
 from . import segmenter
 from . import translator
@@ -56,6 +63,10 @@ confspec: Dict[str, str] = {
 	"honorDocumentLang": "boolean(default=True)",
 	"grade2BoundaryGuard": "boolean(default=True)",
 	"detectLatinSubLanguages": "boolean(default=True)",
+	"detectMath": "boolean(default=True)",
+	"mathTable": "string(default=en-ueb-math.ctb)",
+	"statusCellLanguage": "string(default=none)",
+	"customDictionary": "string(default=\"\")",
 	# Legacy keys for backward compatibility with existing configs
 	"enableArabicPersian": "boolean(default=True)",
 	"tableArabicPersian": "string(default=fa-ir-g1.utb)",
@@ -157,6 +168,15 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		)
 		self.detectLatinSubLanguagesCb.SetValue(cfg.get("detectLatinSubLanguages", True))
 
+		# Translators: Checkbox label to automatically detect Math and STEM formulas
+		self.detectMathCb = sHelper.addItem(
+			wx.CheckBox(
+				self,
+				label=_("Automatically detect &Math and STEM formulas (e.g. LaTeX, equations)"),
+			)
+		)
+		self.detectMathCb.SetValue(cfg.get("detectMath", True))
+
 		self.tactileMarkerOptions = [
 			# Translators: Option for no tactile indicator at language transitions
 			("none", _("None")),
@@ -181,6 +201,29 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 				break
 		self.tactileMarkerChoice.SetSelection(marker_idx)
 
+		# Hardware Status Cell Language Indicator
+		self.statusCellOptions = [
+			# Translators: Option to disable language indicator in hardware status cells
+			("none", _("Disabled")),
+			# Translators: Option to show active language at cursor in status cells
+			("current", _("Current language at cursor")),
+			# Translators: Option to show primary braille language in status cells
+			("primary", _("Primary braille language")),
+		]
+		# Translators: Label for hardware status cell language indicator selection
+		self.statusCellChoice = sHelper.addLabeledControl(
+			_("Hardware &status cell language indicator:"),
+			wx.Choice,
+			choices=[opt[1] for opt in self.statusCellOptions],
+		)
+		cur_sc = cfg.get("statusCellLanguage", "none")
+		sc_idx = 0
+		for idx, (sc_id, opt_lbl) in enumerate(self.statusCellOptions):
+			if sc_id == cur_sc:
+				sc_idx = idx
+				break
+		self.statusCellChoice.SetSelection(sc_idx)
+
 		# Primary Output Table
 		self.sorted_output_tables = sorted(self.available_output_tables, key=lambda t: t.displayName.lower())
 		# Translators: Option to automatically use active NVDA output braille table
@@ -199,6 +242,26 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 					prim_out_idx = idx + 1
 					break
 		self.primaryChoice.SetSelection(prim_out_idx)
+
+		# Math Braille Table
+		self.math_tables = [
+			t for t in self.sorted_output_tables
+			if "math" in t.fileName.lower() or "nemeth" in t.fileName.lower()
+		]
+		if not self.math_tables:
+			self.math_tables = list(self.sorted_output_tables)
+		math_choices = [t.displayName for t in self.math_tables]
+		# Translators: Label for Math braille table selection
+		self.mathTableChoice = sHelper.addLabeledControl(
+			_("&Math braille table:"), wx.Choice, choices=math_choices
+		)
+		cur_math = cfg.get("mathTable", "en-ueb-math.ctb")
+		math_sel = 0
+		for idx, t in enumerate(self.math_tables):
+			if t.fileName == cur_math:
+				math_sel = idx
+				break
+		self.mathTableChoice.SetSelection(math_sel)
 
 		# Primary Input Table
 		self.sorted_input_tables = sorted(self.available_input_tables, key=lambda t: t.displayName.lower())
@@ -268,10 +331,11 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 				"inp_table": inp_tbl,
 			})
 
+		self.custom_dictionary_entries = scripts_data.parse_custom_dictionary(cfg.get("customDictionary", ""))
 		self.refreshTablesList()
 
 		# =============================================================
-		# 3. Action Buttons (Add, Configure, Remove)
+		# 3. Action Buttons (Add, Configure, Remove, Custom Dictionary)
 		# =============================================================
 		btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
 		# Translators: Button to add a new secondary braille table
@@ -292,7 +356,12 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		# Translators: Button to auto-detect installed Windows keyboard languages and configure matching braille tables
 		self.autoDetectButton = wx.Button(self, label=_("&Auto-Detect Keyboards..."))
 		self.autoDetectButton.Bind(wx.EVT_BUTTON, self.onAutoDetectKeyboards)
-		btn_sizer.Add(self.autoDetectButton, 0)
+		btn_sizer.Add(self.autoDetectButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to open Custom Braille Dictionary dialog
+		self.customDictButton = wx.Button(self, label=_("&Custom Dictionary..."))
+		self.customDictButton.Bind(wx.EVT_BUTTON, self.onCustomDictionary)
+		btn_sizer.Add(self.customDictButton, 0)
 
 		sHelper.addItem(btn_sizer)
 
@@ -438,7 +507,18 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 						added_count += 1
 				self.refreshTablesList(select_idx=len(self.active_items) - 1)
 				# Translators: Spoken feedback when tables are added via the auto-detect wizard
+				# Translators: Spoken feedback when tables are added via the auto-detect wizard
 				ui.message(_("Added %d braille tables from Windows keyboards.") % added_count)
+		dlg.Destroy()
+
+	def onCustomDictionary(self, event: wx.Event) -> None:
+		dlg = CustomDictionaryDialog(
+			self,
+			self.custom_dictionary_entries,
+			available_output_tables=self.available_output_tables,
+		)
+		if dlg.ShowModal() == wx.ID_OK:
+			self.custom_dictionary_entries = dlg.get_entries()
 		dlg.Destroy()
 
 	def onSave(self) -> None:
@@ -450,17 +530,29 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		cfg["honorDocumentLang"] = self.honorDocLangCb.GetValue()
 		cfg["grade2BoundaryGuard"] = self.grade2GuardCb.GetValue()
 		cfg["detectLatinSubLanguages"] = self.detectLatinSubLanguagesCb.GetValue()
+		cfg["detectMath"] = self.detectMathCb.GetValue()
+
 		marker_sel = self.tactileMarkerChoice.GetSelection()
 		if 0 <= marker_sel < len(self.tactileMarkerOptions):
 			cfg["tactileMarker"] = self.tactileMarkerOptions[marker_sel][0]
+
+		sc_sel = self.statusCellChoice.GetSelection()
+		if 0 <= sc_sel < len(self.statusCellOptions):
+			cfg["statusCellLanguage"] = self.statusCellOptions[sc_sel][0]
 
 		prim_out = self.selectedPrimaryOutTable()
 		prim_inp = self.selectedPrimaryInpTable()
 		cfg["primaryTable"] = prim_out
 		cfg["primaryInputTable"] = prim_inp
 
+		math_sel = self.mathTableChoice.GetSelection()
+		if 0 <= math_sel < len(self.math_tables):
+			cfg["mathTable"] = self.math_tables[math_sel].fileName
+
 		prim_script = scripts_data.resolve_table_to_script(prim_out)
 		cfg["primaryLanguage"] = prim_script.id
+
+		cfg["customDictionary"] = scripts_data.serialize_custom_dictionary(self.custom_dictionary_entries)
 
 		# Save Active Tables list
 		active_out_list = [item["out_table"] for item in self.active_items]
@@ -500,6 +592,11 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		if braille.handler and api.getFocusObject():
 			braille.handler.handleGainFocus(api.getFocusObject())
 
+		# Apply status cells immediately
+		plugin = globalPluginHandler.runningPlugins.get(GlobalPlugin) if hasattr(globalPluginHandler, "runningPlugins") else None
+		if plugin and hasattr(plugin, "apply_status_cells"):
+			plugin.apply_status_cells(update_display=True)
+
 
 _orig_braille_input: Optional[Callable[..., Any]] = None
 
@@ -538,6 +635,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			_orig_braille_input = current_input
 			bih.input = _hooked_braille_input
 
+		# Register configuration profile switch handler
+		if hasattr(config, "post_configProfileSwitch"):
+			try:
+				config.post_configProfileSwitch.register(self.onConfigProfileSwitch)
+			except Exception:
+				log.warning("Auto Braille: could not register post_configProfileSwitch", exc_info=True)
+
 		if not getattr(getattr(globalVars, "appArgs", None), "secureMode", False):
 			try:
 				from gui.settingsDialogs import NVDASettingsDialog
@@ -551,6 +655,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def terminate(self) -> None:
 		global _orig_braille_input
+
+		if hasattr(config, "post_configProfileSwitch"):
+			try:
+				config.post_configProfileSwitch.unregister(self.onConfigProfileSwitch)
+			except Exception:
+				pass
 
 		if hasattr(self, "_orig_translate") and louisHelper.translate == self._hooked_translate:
 			louisHelper.translate = self._orig_translate
@@ -567,6 +677,50 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			except Exception:
 				pass
 		super().terminate()
+
+	def onConfigProfileSwitch(self) -> None:
+		"""Invalidate translation and input caches when NVDA configuration profile switches."""
+		try:
+			input_sync.invalidate_cache()
+			translator._table_path_cache.clear()
+			translator._table_chain_cache.clear()
+			segmenter.clear_regex_cache()
+			if brailleInput.handler and config.conf.get("autoBraille", {}).get("autoSyncInputTable", True):
+				input_sync.sync_input_table()
+			if braille.handler and api.getFocusObject():
+				braille.handler.handleGainFocus(api.getFocusObject())
+			self.apply_status_cells(update_display=True)
+		except Exception:
+			log.warning("Auto Braille: error handling profile switch", exc_info=True)
+
+	def apply_status_cells(self, update_display: bool = False) -> None:
+		"""Render tactile 2-letter language code to hardware status cells if available."""
+		try:
+			if not braille.handler or not getattr(braille.handler, "display", None):
+				return
+			num_status = getattr(braille.handler.display, "numStatusCells", 0)
+			if num_status < 2:
+				return
+			cfg = config.conf.get("autoBraille", {})
+			mode = cfg.get("statusCellLanguage", "none")
+			if mode == "none":
+				return
+			if mode == "primary":
+				target_lang = translator.get_primary_script()
+			else:
+				target_lang = getattr(translator, "last_active_language", "en")
+			dots = scripts_data.get_status_cell_dots_for_lang(target_lang)
+			if hasattr(braille.handler, "statusCells") and isinstance(braille.handler.statusCells, list):
+				if len(braille.handler.statusCells) >= 2:
+					braille.handler.statusCells[0] = dots[0]
+					braille.handler.statusCells[1] = dots[1]
+					if update_display and hasattr(braille.handler.display, "display"):
+						braille.handler.display.display(
+							getattr(braille.handler, "cells", []),
+							statusCells=braille.handler.statusCells,
+						)
+		except Exception:
+			pass
 
 	def event_gainFocus(self, obj: Any, nextHandler: Callable[..., Any]) -> None:
 		"""Synchronize braille input table when active application or window changes."""
@@ -634,7 +788,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return self._orig_translate(tableList, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
 
 		# Mixed or secondary script detected, doc spans present, or tactile markers active
-		return translator.multi_script_translate(
+		result = translator.multi_script_translate(
 			self._orig_translate,
 			tableList,
 			inbuf,
@@ -643,6 +797,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			cursorPos=cursorPos,
 			doc_lang_spans=doc_spans,
 		)
+		self.apply_status_cells(update_display=False)
+		return result
 
 	# Translators: Description for gesture script that toggles multi-script translation on and off
 	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
@@ -668,6 +824,133 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	)
 	def script_toggleBrailleInputLanguage(self, gesture: Any) -> None:
 		input_sync.toggle_input_language()
+
+	# Translators: Description for gesture script that cycles through secondary braille tables
+	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
+	@script(
+		description=_("Cycles through active secondary braille tables"),
+		category=_("Auto Braille"),
+	)
+	def script_cycleSecondaryTable(self, gesture: Any) -> None:
+		cfg = config.conf.get("autoBraille", {})
+		raw_tables = cfg.get("activeTables", "")
+		if isinstance(raw_tables, str):
+			tables = [t.strip() for t in raw_tables.split(",") if t.strip()]
+		else:
+			tables = list(raw_tables)
+		if len(tables) <= 1:
+			# Translators: Spoken feedback when only one secondary table is configured
+			ui.message(_("Only one secondary table configured."))
+			return
+
+		# Rotate tables list so next table is at front
+		tables = tables[1:] + tables[:1]
+		config.conf["autoBraille"]["activeTables"] = ",".join(tables)
+		new_active = tables[0]
+
+		input_sync.invalidate_cache()
+		translator._table_chain_cache.clear()
+		segmenter.clear_regex_cache()
+
+		table_disp = new_active
+		try:
+			for t in brailleTables.listTables():
+				if t.fileName == new_active:
+					table_disp = t.displayName
+					break
+		except Exception:
+			pass
+
+		lang_name = scripts_data.get_language_name_for_table(new_active, table_disp)
+		# Translators: Spoken and braille message when secondary braille table is cycled
+		msg = _("Secondary braille table: %s (%s)") % (lang_name, table_disp)
+		ui.message(msg)
+		if braille.handler:
+			try:
+				braille.handler.message(msg)
+				if api.getFocusObject():
+					braille.handler.handleGainFocus(api.getFocusObject())
+			except Exception:
+				pass
+
+	# Translators: Description for gesture script that cycles primary braille tables
+	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
+	@script(
+		description=_("Cycles primary braille table between configured languages"),
+		category=_("Auto Braille"),
+	)
+	def script_cyclePrimaryTable(self, gesture: Any) -> None:
+		cfg = config.conf.get("autoBraille", {})
+		cur_primary = cfg.get("primaryTable", "auto")
+		raw_tables = cfg.get("activeTables", "")
+		if isinstance(raw_tables, str):
+			sec_tables = [t.strip() for t in raw_tables.split(",") if t.strip()]
+		else:
+			sec_tables = list(raw_tables)
+		if not sec_tables:
+			# Translators: Spoken feedback when no tables are available to cycle
+			ui.message(_("No secondary tables available to cycle."))
+			return
+
+		# Swap current primary with first secondary table
+		first_sec = sec_tables[0]
+		if cur_primary != "auto":
+			sec_tables[0] = cur_primary
+		else:
+			sec_tables = sec_tables[1:]
+		config.conf["autoBraille"]["primaryTable"] = first_sec
+		config.conf["autoBraille"]["activeTables"] = ",".join(sec_tables)
+
+		prim_script = scripts_data.resolve_table_to_script(first_sec)
+		if prim_script:
+			config.conf["autoBraille"]["primaryLanguage"] = prim_script.id
+
+		input_sync.invalidate_cache()
+		translator._table_chain_cache.clear()
+		segmenter.clear_regex_cache()
+
+		table_disp = first_sec
+		try:
+			for t in brailleTables.listTables():
+				if t.fileName == first_sec:
+					table_disp = t.displayName
+					break
+		except Exception:
+			pass
+
+		lang_name = scripts_data.get_language_name_for_table(first_sec, table_disp)
+		# Translators: Spoken and braille message when primary braille table is cycled
+		msg = _("Primary braille table: %s (%s)") % (lang_name, table_disp)
+		ui.message(msg)
+		if braille.handler:
+			try:
+				braille.handler.message(msg)
+				if api.getFocusObject():
+					braille.handler.handleGainFocus(api.getFocusObject())
+			except Exception:
+				pass
+
+	# Translators: Description for gesture script that toggles Math formula auto-detection
+	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
+	@script(
+		description=_("Toggles automatic Math and STEM formula detection on and off"),
+		category=_("Auto Braille"),
+	)
+	def script_toggleMathDetection(self, gesture: Any) -> None:
+		cfg = config.conf.get("autoBraille", {})
+		new_val = not cfg.get("detectMath", True)
+		config.conf["autoBraille"]["detectMath"] = new_val
+		# Translators: Announcement when Math formula detection is enabled
+		# Translators: Announcement when Math formula detection is disabled
+		msg = _("Math auto-detection enabled") if new_val else _("Math auto-detection disabled")
+		ui.message(msg)
+		if braille.handler:
+			try:
+				braille.handler.message(msg)
+				if api.getFocusObject():
+					braille.handler.handleGainFocus(api.getFocusObject())
+			except Exception:
+				pass
 
 	# Translators: Description for gesture script that announces character, language, and table at caret
 	# Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures

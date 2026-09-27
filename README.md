@@ -50,7 +50,43 @@ Traditionally, NVDA users can only select a single braille translation table at 
 * **English Loanword Anchoring:** Common accented English words (`café`, `résumé`, `cliché`, `façade`, `fiancé`) stay in English UEB unless surrounding context contains foreign stop words.
 * **Turkish Dotless "i" Case-Folding Safety:** Codepoints `[ğĞıİşŞ]` are preserved without case-folding corruption.
 
-### 5. Smart Document Language Tag Integration (`lang` tags)
+### 5. Math & STEM Auto-Detection (LaTeX & Technical Formulas)
+* **LaTeX Formula Recognition:** Automatically recognizes inline LaTeX mathematical notation (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`) and dynamically routes formulas through dedicated technical math tables (such as Unified English Braille Technical Math `en-ueb-math.ctb` or Nemeth Code `nemeth.ctb`).
+* **Plain-Text Equation Parsing:** Recognizes inline mathematical expressions (`f(x) = 2x + 1`, `E = mc^2`, `a + b = c`, `y = mx + b`, `x <= 10`, `\sqrt{x}`, `\frac{a}{b}`) while keeping surrounding literary prose in standard literary braille.
+* **Currency Collision Prevention:** Currency values like `$50`, `$10.99`, or `$100.00` are strictly guarded and never misidentified as LaTeX math formulas.
+* **Sentence Punctuation Detachment:** Trailing sentence punctuation (periods, commas, colons, question marks) is detached from the formula boundary so sentence punctuation remains in literary braille.
+* **Grade 2 Protection:** Technical math expressions are excluded from Grade 2 contracted word-sign substitutions.
+
+### 6. Hardware Status Cell Language Indicators
+* **Tactile 2-Letter Language Codes:** Many 40-cell, 60-cell, and 80-cell braille displays (Focus, Braille Edge, Brailliant, Orbit Reader) have 2 to 4 physical **status cells** separated from the main reading line. Auto Braille displays a 2-letter tactile language indicator:
+  - `⠢⠝` (`en`): English / Latin
+  - `⠋⠁` (`fa`): Persian
+  - `⠙⠑` (`de`): German
+  - `⠋⠗` (`fr`): French
+  - `⠗⠥` (`ru`): Russian
+  - `⠑⠎` (`es`): Spanish
+  - `⠍⠁` (`ma`): Math & STEM formula
+* **Configurable Modes:**
+  - **Disabled:** Leaves status cells to NVDA's default behavior.
+  - **Current language at cursor:** Dynamically updates the status cells as you read across languages and formulas.
+  - **Primary braille language:** Always displays the base language indicator.
+* **Hardware Safety:** Fully guarded with display cell count checks; portable displays with 0 status cells gracefully skip without errors.
+
+### 7. App-Specific & Profile-Aware Braille Switching
+* **NVDA Profile Integration:** Hooks into NVDA's configuration profile lifecycle (`config.post_configProfileSwitch`).
+* When switching between applications (e.g. VS Code with Nemeth/technical math vs. Microsoft Word with Grade 2 contracted literary braille), Auto Braille automatically invalidates internal caches, synchronizes Perkins input tables, and refreshes the braille display.
+
+### 8. Custom User Lexicon / Dictionary Overrides
+* **Word-to-Table Custom Rules:** Define custom word or phrase overrides in NVDA Settings to force specific vocabulary to always translate with a chosen braille table (e.g. `Python` &rarr; `en-ueb-g2.ctb`, or `LaTeX` &rarr; `en-ueb-math.ctb`).
+* **Word Boundary Locking:** Enforces atomic word boundaries (`r"(?<!\w)...(?!\w)"`) to prevent partial substring corruption (e.g. matching `in` will never corrupt `morning` or `terminal`).
+* **Case Sensitivity Options:** Each custom entry can be configured as case-sensitive or case-insensitive.
+* **Accessible Management Dialog:** Add, edit, and remove custom rules with keyboard navigation and instant preview.
+
+### 9. Direct Braille Display Key Shortcuts / Chords (Unassigned Gestures)
+* **Customizable Braille Display Binding:** Auto Braille scripts are registered with **unassigned gestures** in NVDA's Input Gestures dialog under the **Auto Braille** category.
+* Users can map any key, rocker switch, thumb key, or Perkins chord on their braille display (e.g. `Space + Dot 1 + Dot 2`) without collisions with existing display driver shortcuts!
+
+### 10. Smart Document Language Tag Integration (`lang` tags)
 * Automatically detects HTML and document language tags (`<span lang="fa">`, `<p lang="en">`).
 * **Conflict Validator:** If an author mistakenly tags Persian text as English, Auto Braille automatically validates the characters and falls back to Unicode script detection so text is never corrupted.
 
@@ -78,9 +114,12 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 | [X] Honor document language tags in web and office documents (e.g. HTML, Word)  |
 | [X] Protect isolated letters and code identifiers in Contracted Braille (G2)    |
 | [X] Automatically detect European language diacritics in Latin text             |
+| [X] Automatically detect Math and STEM formulas (e.g. LaTeX, equations)         |
 |                                                                                 |
 | Tactile indicator for language boundaries: [Dot 8 under first cell...         v] |
+| Hardware status cell language indicator:   [Current language at cursor        v] |
 | Primary output braille table:              [Automatic (From NVDA settings)    v] |
+| Math braille table:                        [Unified English Braille - Math    v] |
 | Primary Perkins input braille table:       [Automatic (Match output table)    v] |
 |---------------------------------------------------------------------------------|
 | Active Secondary Braille Tables (Auto-Detected):                                |
@@ -90,7 +129,7 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 | | French computer 8-dot (fr-bfu-comp8.ctb)  —  Input: French computer 8-dot   | |
 | | Turkish grade 1 (tr-g1.ctb)  —  Input: Turkish grade 1                      | |
 | +-----------------------------------------------------------------------------+ |
-| [&Add Table...]   [&Configure Table...]   [&Remove Table]   [&Auto-Detect...]   |
+| [&Add Table...] [&Configure Table...] [&Remove Table] [&Auto-Detect...] [&Custom Dictionary...] |
 +---------------------------------------------------------------------------------+
 ```
 
@@ -120,15 +159,24 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 
 ## ⌨️ Input Gestures
 
-Auto Braille commands are available in NVDA's Input Gestures dialog (**`NVDA Menu -> Preferences -> Input Gestures -> Auto Braille`**):
+Auto Braille commands are registered with **unassigned gestures** in NVDA's Input Gestures dialog (**`NVDA Menu -> Preferences -> Input Gestures -> Auto Braille`**). Users can map them to any preferred braille display key, thumb key, Perkins chord, or keyboard shortcut:
 
+* **Cycles through active secondary braille tables** (Unassigned by default).
+* **Cycles primary braille table between configured languages** (Unassigned by default).
+* **Toggles automatic Math and STEM formula detection on and off** (Unassigned by default).
 * **Toggles automatic universal multi-script braille translation on and off** (Unassigned by default).
 * **Cycles or toggles Perkins braille keyboard input language** (Unassigned by default).
 * **Announces the language and braille table at the caret or review cursor** (Recommended: assign to `NVDA + Shift + L` or a key on your braille display).
 
 ---
 
-## 🧪 Testing Your Braille Display
+## 🧪 Hardware Testing & Community Invitation
+
+> [!IMPORTANT]
+> **Tested Hardware Display:** I have personally tested this add-on extensively with the **Braille Edge 40 by HIMS**.
+> Because braille displays differ across manufacturers in key layouts, driver implementations, and physical status cells (e.g. Focus 40/80, Brailliant BI, Orbit Reader, Alva, PAC Mate), comprehensive testing across all refreshable braille displays is warmly encouraged!
+>
+> This project serves as an open-source proof of concept, and anyone who wants to build on it, extend it, or integrate new tables is very welcome to do so. Since I am not an expert in languages other than Persian and English, feedback, bug reports, and testing from native braille readers in French, German, Spanish, Turkish, Arabic, Russian, Indic, and other languages are deeply appreciated.
 
 Explore the test suites included in the `doc/` directory:
 * **Interactive HTML Test Document:** `doc/autoBraille_test_document.html` (open in Chrome, Edge, or Firefox).
@@ -158,7 +206,7 @@ Or with PowerShell on Windows:
 
 ### Running Automated Tests
 
-Run the complete 7-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, and Windows keyboard auto-detection with a single command:
+Run the complete 9-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, Windows keyboard auto-detection, Latin sub-language diacritics, Math & STEM auto-detection, and hardware status cells with a single command:
 ```bash
 python run_tests.py
 ```
@@ -176,6 +224,8 @@ python tests/test_segmenter.py
 python tests/test_intra_script.py
 python tests/test_grade2_boundary.py
 python tests/test_auto_detect_keyboards.py
+python tests/test_latin_sub_languages.py
+python tests/test_new_features.py
 ```
 
 ### Localization & Translations
@@ -186,6 +236,16 @@ Auto Braille adheres to standard GNU gettext localization practices:
 ```bash
 py.exe generate_pot.py
 ```
+
+---
+
+## 🗺️ Roadmap & Future Work
+
+As the author of Auto Braille, I am continually working to make braille reading and typing on NVDA as fluid and natural as possible across all languages and displays. Future explorations include:
+* **Expanded STEM notation support:** Richer MathML and advanced LaTeX expression handling.
+* **Intra-word multi-language code-switching:** Further refinements for technical programming languages and mixed bilingual jargon.
+* **Per-application braille profiles UI:** Even deeper integration with NVDA application profiles directly from the Auto Braille settings dialog.
+* **Community-submitted language tables:** Pre-configured table sets for specialized regional braille standards.
 
 ---
 

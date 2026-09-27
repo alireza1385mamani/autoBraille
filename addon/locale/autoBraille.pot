@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: autoBraille 1.0.5\n"
+"Project-Id-Version: autoBraille 1.0.6\n"
 "Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\n"
 "POT-Creation-Date: 2026-09-26 13:35+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -253,3 +253,127 @@ msgstr ""
 #: addon/globalPlugins/autoBraille/__init__.py:150
 msgid "Automatically detect &European language diacritics in Latin text (e.g. German, French, Spanish, Turkish)"
 msgstr ""
+
+#. Translators: Checkbox label to automatically detect Math and STEM formulas
+#: addon/globalPlugins/autoBraille/__init__.py:171
+msgid "Automatically detect &Math and STEM formulas (e.g. LaTeX, equations)"
+msgstr ""
+
+#. Translators: Label for Math braille table selection
+#: addon/globalPlugins/autoBraille/__init__.py:221
+msgid "&Math braille table:"
+msgstr ""
+
+#. Translators: Label for hardware status cell language indicator selection
+#: addon/globalPlugins/autoBraille/__init__.py:204
+msgid "Hardware &status cell language indicator:"
+msgstr ""
+
+#. Translators: Option to disable language indicator in hardware status cells
+#: addon/globalPlugins/autoBraille/__init__.py:196
+msgid "Disabled"
+msgstr ""
+
+#. Translators: Option to show active language at cursor in status cells
+#: addon/globalPlugins/autoBraille/__init__.py:198
+msgid "Current language at cursor"
+msgstr ""
+
+#. Translators: Option to show primary braille language in status cells
+#: addon/globalPlugins/autoBraille/__init__.py:200
+msgid "Primary braille language"
+msgstr ""
+
+#. Translators: Button to open Custom Braille Dictionary dialog
+#: addon/globalPlugins/autoBraille/__init__.py:360
+msgid "&Custom Dictionary..."
+msgstr ""
+
+#. Translators: Title of the Custom Lexicon / Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:417
+msgid "Custom Braille Dictionary"
+msgstr ""
+
+#. Translators: Title of the Edit Custom Dictionary Entry dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:374
+msgid "Edit Custom Dictionary Entry"
+msgstr ""
+
+#: addon/globalPlugins/autoBraille/language_dialogs.py:374
+msgid "Add Custom Dictionary Entry"
+msgstr ""
+
+#. Translators: Label for pattern or word text control in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:387
+msgid "&Word or phrase to match:"
+msgstr ""
+
+#. Translators: Label for target braille table choice in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:392
+msgid "&Braille table:"
+msgstr ""
+
+#. Translators: Checkbox label for case sensitivity in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:404
+msgid "&Case sensitive"
+msgstr ""
+
+#. Translators: Description in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:428
+msgid "Define custom words or phrases that should always be translated with a specific braille table:"
+msgstr ""
+
+#. Translators: Indicator that entry matching is case sensitive
+#: addon/globalPlugins/autoBraille/language_dialogs.py:488
+msgid "case-sensitive"
+msgstr ""
+
+#: addon/globalPlugins/autoBraille/language_dialogs.py:488
+msgid "case-insensitive"
+msgstr ""
+
+#. Translators: Description for gesture script that cycles through secondary braille tables
+#: addon/globalPlugins/autoBraille/__init__.py:825
+msgid "Cycles through active secondary braille tables"
+msgstr ""
+
+#. Translators: Spoken feedback when only one secondary table is configured
+#: addon/globalPlugins/autoBraille/__init__.py:836
+msgid "Only one secondary table configured."
+msgstr ""
+
+#. Translators: Spoken and braille message when secondary braille table is cycled
+#: addon/globalPlugins/autoBraille/__init__.py:860
+msgid "Secondary braille table: %s (%s)"
+msgstr ""
+
+#. Translators: Description for gesture script that cycles primary braille tables
+#: addon/globalPlugins/autoBraille/__init__.py:873
+msgid "Cycles primary braille table between configured languages"
+msgstr ""
+
+#. Translators: Spoken feedback when no tables are available to cycle
+#: addon/globalPlugins/autoBraille/__init__.py:887
+msgid "No secondary tables available to cycle."
+msgstr ""
+
+#. Translators: Spoken and braille message when primary braille table is cycled
+#: addon/globalPlugins/autoBraille/__init__.py:917
+msgid "Primary braille table: %s (%s)"
+msgstr ""
+
+#. Translators: Description for gesture script that toggles Math formula auto-detection
+#: addon/globalPlugins/autoBraille/__init__.py:930
+msgid "Toggles automatic Math and STEM formula detection on and off"
+msgstr ""
+
+#. Translators: Announcement when Math formula detection is enabled
+#: addon/globalPlugins/autoBraille/__init__.py:938
+msgid "Math auto-detection enabled"
+msgstr ""
+
+#. Translators: Announcement when Math formula detection is disabled
+#: addon/globalPlugins/autoBraille/__init__.py:938
+msgid "Math auto-detection disabled"
+msgstr ""
+

@@ -230,30 +230,18 @@ def segment_latin_sub_languages(
 	return merged
 
 
-def segment_text(
+def _segment_literary_text(
 	text: str,
-	enabled_scripts: Optional[Set[str]] = None,
+	enabled_scripts: Set[str],
 	primary_script: str = "latin",
-	default_script: Optional[str] = None,
 	active_latin_tables: Optional[List[str]] = None,
 	detect_latin_sub_languages: bool = True,
 	primary_table: str = "en-ueb-g1.ctb",
+	base_offset: int = 0,
 ) -> List[Tuple[str, int, int, str]]:
-	"""Partition text into contiguous (slice_text, start_index, end_index, script) segments.
-
-	Guarantees:
-	- Every character in text is covered in order without gaps or overlaps.
-	- ``''.join(seg[0] for seg in segments) == text``.
-	- Sub-microsecond execution when no secondary scripts are present via early regex escape.
-	"""
+	"""Partition a purely literary text block into script and sub-language segments."""
 	if not text:
 		return []
-
-	if default_script is not None:
-		primary_script = default_script
-
-	if enabled_scripts is None:
-		enabled_scripts = set(scripts_data.get_all_script_ids())
 
 	def _apply_latin_sub_languages(segs: List[Tuple[str, int, int, str]]) -> List[Tuple[str, int, int, str]]:
 		if not detect_latin_sub_languages or not active_latin_tables or len(active_latin_tables) <= 1:
@@ -277,7 +265,7 @@ def segment_text(
 
 	# Instant fast-path: If text has no secondary script characters, return as whole segment
 	if not has_secondary_scripts(text, secondary_scripts):
-		return _apply_latin_sub_languages([(text, 0, len(text), primary_script)])
+		return _apply_latin_sub_languages([(text, base_offset, base_offset + len(text), primary_script)])
 
 	scanner = get_scanner_regex(enabled_scripts)
 
@@ -289,12 +277,12 @@ def segment_text(
 	]
 
 	if not raw_matches:
-		return _apply_latin_sub_languages([(text, 0, len(text), primary_script)])
+		return _apply_latin_sub_languages([(text, base_offset, base_offset + len(text), primary_script)])
 
 	# Pure single-script optimization: If all matches belong to the same script
 	first_script = raw_matches[0][2]
 	if all(m[2] == first_script for m in raw_matches):
-		return _apply_latin_sub_languages([(text, 0, len(text), first_script)])
+		return _apply_latin_sub_languages([(text, base_offset, base_offset + len(text), first_script)])
 
 	# Resolve neutral characters (punctuation, whitespace, brackets) between script runs
 	raw_spans: List[Tuple[int, int, str]] = []
@@ -364,14 +352,139 @@ def segment_text(
 			cur_seg_end = end
 		else:
 			if cur_seg_end > cur_seg_start:
-				merged.append((text[cur_seg_start:cur_seg_end], cur_seg_start, cur_seg_end, cur_seg_type))
+				merged.append((
+					text[cur_seg_start:cur_seg_end],
+					base_offset + cur_seg_start,
+					base_offset + cur_seg_end,
+					cur_seg_type,
+				))
 			cur_seg_start = start
 			cur_seg_end = end
 			cur_seg_type = s_type
 
 	if cur_seg_end > cur_seg_start:
-		merged.append((text[cur_seg_start:cur_seg_end], cur_seg_start, cur_seg_end, cur_seg_type))
+		merged.append((
+			text[cur_seg_start:cur_seg_end],
+			base_offset + cur_seg_start,
+			base_offset + cur_seg_end,
+			cur_seg_type,
+		))
 
 	return _apply_latin_sub_languages(merged)
+
+
+def segment_text(
+	text: str,
+	enabled_scripts: Optional[Set[str]] = None,
+	primary_script: str = "latin",
+	default_script: Optional[str] = None,
+	active_latin_tables: Optional[List[str]] = None,
+	detect_latin_sub_languages: bool = True,
+	primary_table: str = "en-ueb-g1.ctb",
+	detect_math: bool = False,
+	math_table: str = "en-ueb-math.ctb",
+	custom_dictionary: Optional[List[Dict[str, Any]]] = None,
+) -> List[Tuple[str, int, int, str]]:
+	"""Partition text into contiguous (slice_text, start_index, end_index, script) segments.
+
+	Guarantees:
+	- Every character in text is covered in order without gaps or overlaps.
+	- ``''.join(seg[0] for seg in segments) == text``.
+	- Priority hierarchy: Custom Lexicon > Math & STEM Formulas > Script & Sub-Language.
+	- Sub-microsecond execution when no secondary scripts, math, or custom rules are present.
+	"""
+	if not text:
+		return []
+
+	if default_script is not None:
+		primary_script = default_script
+
+	if enabled_scripts is None:
+		enabled_scripts = set(scripts_data.get_all_script_ids())
+
+	# Identify high-priority custom lexicon and math formula spans
+	priority_spans: List[Tuple[int, int, str]] = []
+	n_len = len(text)
+	occupied = [False] * n_len
+
+	# 1. Custom lexicon / dictionary overrides (highest priority)
+	if custom_dictionary:
+		for entry in custom_dictionary:
+			pat = entry.get("pattern", "")
+			tbl = entry.get("table", "")
+			if not pat or not tbl:
+				continue
+			cs = entry.get("case_sensitive", False)
+			flags = 0 if cs else re.IGNORECASE
+			p_esc = re.escape(pat)
+			prefix = r"(?<!\w)" if pat[0].isalnum() else ""
+			suffix = r"(?!\w)" if pat[-1].isalnum() else ""
+			try:
+				regex = re.compile(f"{prefix}{p_esc}{suffix}", flags)
+				for m in regex.finditer(text):
+					s, e = m.start(), m.end()
+					if not any(occupied[i] for i in range(s, e)):
+						priority_spans.append((s, e, f"custom:{tbl}"))
+						for i in range(s, e):
+							occupied[i] = True
+			except Exception:
+				pass
+
+	# 2. Math & STEM formulas
+	if detect_math and scripts_data.has_math_candidate(text):
+		math_spans = scripts_data.find_math_spans(text)
+		for s, e, m_text in math_spans:
+			if not any(occupied[i] for i in range(s, e)):
+				priority_spans.append((s, e, f"math:{math_table}"))
+				for i in range(s, e):
+					occupied[i] = True
+
+	# Fast-path: If no custom dictionary matches and no math formulas detected
+	if not priority_spans:
+		return _segment_literary_text(
+			text,
+			enabled_scripts=enabled_scripts,
+			primary_script=primary_script,
+			active_latin_tables=active_latin_tables,
+			detect_latin_sub_languages=detect_latin_sub_languages,
+			primary_table=primary_table,
+			base_offset=0,
+		)
+
+	# Partition text around priority spans
+	priority_spans.sort(key=lambda x: x[0])
+	all_segments: List[Tuple[str, int, int, str]] = []
+	last_end = 0
+
+	for p_start, p_end, p_tag in priority_spans:
+		if p_start > last_end:
+			chunk = text[last_end:p_start]
+			chunk_segs = _segment_literary_text(
+				chunk,
+				enabled_scripts=enabled_scripts,
+				primary_script=primary_script,
+				active_latin_tables=active_latin_tables,
+				detect_latin_sub_languages=detect_latin_sub_languages,
+				primary_table=primary_table,
+				base_offset=last_end,
+			)
+			all_segments.extend(chunk_segs)
+		all_segments.append((text[p_start:p_end], p_start, p_end, p_tag))
+		last_end = p_end
+
+	if last_end < n_len:
+		chunk = text[last_end:]
+		chunk_segs = _segment_literary_text(
+			chunk,
+			enabled_scripts=enabled_scripts,
+			primary_script=primary_script,
+			active_latin_tables=active_latin_tables,
+			detect_latin_sub_languages=detect_latin_sub_languages,
+			primary_table=primary_table,
+			base_offset=last_end,
+		)
+		all_segments.extend(chunk_segs)
+
+	return all_segments
 
 

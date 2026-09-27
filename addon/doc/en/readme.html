@@ -31,7 +31,7 @@
     <h1>Auto Braille: Universal Multi-Script In-Line Translation &amp; Perkins Input for NVDA</h1>
     
     <div class="meta">
-        <p><strong>Version:</strong> 1.0.5 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.3+ | <strong>License:</strong> GNU General Public License v2.0</p>
+        <p><strong>Version:</strong> 1.0.6 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.3+ | <strong>License:</strong> GNU General Public License v2.0</p>
         <p><strong>Author:</strong> Alireza Mamani &amp; Antigravity (&lt;<a href="https://github.com/alireza1385mamani">https://github.com/alireza1385mamani</a>&gt;)<br>
         <strong>Repository:</strong> &lt;<a href="https://github.com/alireza1385mamani/autoBraille">https://github.com/alireza1385mamani/autoBraille</a>&gt;</p>
     </div>
@@ -102,6 +102,25 @@
         <li><strong>In-Place Customization:</strong> Select any detected candidate and click <strong>Edit Table...</strong> to customize its output or Perkins input table before applying.</li>
     </ul>
 
+    <h3>9. Math &amp; STEM Auto-Detection</h3>
+    <ul>
+        <li><strong>Inline Mathematical Formula Detection:</strong> Automatically recognizes mathematical expressions, equations, and LaTeX delimiters (<code>$...$</code>, <code>$$...$$</code>, <code>\(...\)</code>, <code>\[...\]</code>, <code>f(x) = 2x + 1</code>, <code>E = mc^2</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>!=</code>).</li>
+        <li><strong>Dedicated Math Table Routing:</strong> Dynamically routes formula spans through specialized math tables (e.g. <code>en-ueb-math.ctb</code> or Nemeth Code) while keeping surrounding prose in standard literary tables.</li>
+        <li><strong>Currency Sign &amp; Punctuation Guard:</strong> Accurately distinguishes LaTeX delimiters from monetary amounts (<code>$50</code>, <code>$10.99</code>) and shields trailing sentence punctuation from math syntax.</li>
+    </ul>
+
+    <h3>10. Hardware Status Cell Language Indicators</h3>
+    <ul>
+        <li><strong>Tactile Language Cues on Refreshable Braille Displays:</strong> On 40-cell, 60-cell, and 80-cell displays with physical status cells (Focus, HIMS Braille Edge, Brailliant, Orbit Reader, Alva, etc.), renders a tactile language indicator (e.g. <code>⠢⠝</code> for EN, <code>⠋⠁</code> for FA, <code>⠙⠑</code> for DE, <code>⠍⠁</code> for Math).</li>
+        <li><strong>Configurable Display Modes:</strong> Choose between Off, 2-letter tactile indicator, 1-letter tactile indicator, or Primary/Secondary dot patterns. Displays without status cells gracefully fall back with zero overhead.</li>
+    </ul>
+
+    <h3>11. Custom User Lexicon / Dictionary Overrides</h3>
+    <ul>
+        <li><strong>User-Defined Braille Routing Rules:</strong> Define word- or symbol-specific braille routing rules via an accessible dialog in settings.</li>
+        <li><strong>Atomic Pre-Partitioning:</strong> Custom words are locked with word boundaries (<code>\b</code>) and partitioned prior to literary and math segmentation, allowing custom table assignment and case-sensitivity per entry.</li>
+    </ul>
+
     <h2>Configuration</h2>
     <div class="note">
         <strong>Security Notice:</strong> In compliance with official NVDA Add-on Store standards, the configuration panel is safely disabled when NVDA runs on the Windows Secure Desktop (e.g. UAC elevation prompts and login screens).
@@ -114,6 +133,9 @@
         <li><strong>Honor document language tags in web and office documents:</strong> Prioritize official HTML/Word <code>lang</code> tags when accurate.</li>
         <li><strong>Protect isolated letters and code identifiers in Contracted Braille (Grade 2):</strong> Safeguards single-letter variables and technical identifiers against accidental contractions.</li>
         <li><strong>Automatically detect European language diacritics in Latin text:</strong> Detects language-specific accented characters and routes words to the appropriate European braille table.</li>
+        <li><strong>Automatically detect math &amp; STEM expressions and route to math table:</strong> Toggles Math &amp; STEM detection and lets you select the dedicated math table (e.g. <code>en-ueb-math.ctb</code>).</li>
+        <li><strong>Hardware status cell language indicator:</strong> Configure tactile language indicators on displays with physical status cells (Disabled, 2-letter, 1-letter, or Primary/Secondary dots).</li>
+        <li><strong>Custom Lexicon / Dictionary Overrides...:</strong> Open the dictionary manager to add, edit, or remove word-specific braille routing rules.</li>
         <li><strong>Tactile indicator for language boundaries:</strong> Select your preferred pin indicator (None, Dot 8, Dot 7, or Dots 7 and 8 underline).</li>
         <li><strong>Primary output braille table:</strong> Select your default output table from all installed Liblouis tables, or choose <em>Automatic (Use active NVDA output table)</em>.</li>
         <li><strong>Primary Perkins input braille table:</strong> Select your default Perkins input table, or choose <em>Automatic (Follow active NVDA input table)</em>.</li>
@@ -126,6 +148,17 @@
         <li><strong>Toggles automatic universal multi-script braille translation on and off:</strong> (Unassigned by default).</li>
         <li><strong>Cycles or toggles Perkins braille keyboard input language:</strong> (Unassigned by default).</li>
         <li><strong>Announces the language and braille table at the caret or review cursor:</strong> (Recommended shortcut: <code>NVDA + Shift + L</code> or a key on your braille display).</li>
+        <li><strong>Cycles to the next active secondary braille table:</strong> (Unassigned &mdash; map freely to display keys/chords).</li>
+        <li><strong>Cycles to the next primary braille table:</strong> (Unassigned &mdash; map freely to display keys/chords).</li>
+        <li><strong>Toggles Math &amp; STEM auto-detection on and off:</strong> (Unassigned &mdash; map freely to display keys/chords).</li>
     </ul>
+
+    <h2>Hardware Testing &amp; Community Invitation</h2>
+    <div class="note">
+        <strong>Hardware Testing Notice:</strong> I have developed and tested Auto Braille with a <strong>Braille Edge 40 by HIMS</strong>. Because refreshable braille displays vary significantly in driver behavior, firmware cell mappings, and physical status cell layouts across manufacturers (Focus, Brailliant, Orbit Reader, Alva, etc.), extensive testing across all refreshable braille displays is needed.<br><br>
+        This add-on serves as an open-source proof of concept for the blind and visually impaired community worldwide. If anyone would like to test, extend, or build upon this work, you are warmly welcome to do so!<br><br>
+        Furthermore, since I am not an expert in languages other than Persian and English, feedback and real-world testing from native braille readers in Arabic, German, French, Spanish, Russian, Turkish, CJK, Indic, and other languages would be very welcome.<br><br>
+        Please submit issues, test reports, and pull requests on GitHub: &lt;<a href="https://github.com/alireza1385mamani/autoBraille">https://github.com/alireza1385mamani/autoBraille</a>&gt;
+    </div>
 </body>
 </html>

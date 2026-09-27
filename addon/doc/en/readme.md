@@ -61,6 +61,19 @@
 * **Smart Liblouis Mapping:** Auto Braille matches each keyboard to its recommended braille output table and Perkins input table, while preserving your primary language and eliminating duplicate entries.
 * **In-Place Customization:** An accessible preview dialog displays all detected keyboard languages. Select any item and click **Edit Table...** to customize its output or Perkins input table before applying!
 
+### 9. Math & STEM Auto-Detection
+* **Inline Mathematical Formula Detection:** Automatically recognizes mathematical expressions, equations, and LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`, `f(x) = 2x + 1`, `E = mc^2`, `<=`, `>=`, `!=`).
+* **Dedicated Math Table Routing:** Dynamically routes formula spans through specialized math tables (e.g. `en-ueb-math.ctb` or Nemeth Code) while keeping surrounding prose in standard literary tables.
+* **Currency Sign & Punctuation Guard:** Accurately distinguishes LaTeX delimiters from monetary amounts (`$50`, `$10.99`) and shields trailing sentence punctuation from math syntax.
+
+### 10. Hardware Status Cell Language Indicators
+* **Tactile Language Cues on Refreshable Braille Displays:** On 40-cell, 60-cell, and 80-cell displays with physical status cells (Focus, HIMS Braille Edge, Brailliant, Orbit Reader, Alva, etc.), renders a tactile language indicator (e.g. `⠢⠝` for EN, `⠋⠁` for FA, `⠙⠑` for DE, `⠍⠁` for Math).
+* **Configurable Display Modes:** Choose between Off, 2-letter tactile indicator, 1-letter tactile indicator, or Primary/Secondary dot patterns. Displays without status cells gracefully fall back with zero overhead.
+
+### 11. Custom User Lexicon / Dictionary Overrides
+* **User-Defined Braille Routing Rules:** Define word- or symbol-specific braille routing rules via an accessible dialog in settings.
+* **Atomic Pre-Partitioning:** Custom words are locked with word boundaries (`\b`) and partitioned prior to literary and math segmentation, allowing custom table assignment and case-sensitivity per entry.
+
 ---
 
 ## Configuration
@@ -75,10 +88,13 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 3. **Honor document language tags in web and office documents:** Prioritize official HTML/Word `lang` tags when accurate.
 4. **Protect isolated letters and code identifiers in Contracted Braille (Grade 2):** Safeguards single-letter variables and technical identifiers against accidental contractions.
 5. **Automatically detect European language diacritics in Latin text:** Detects language-specific accented characters and routes words to the appropriate European braille table.
-6. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
-7. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
-8. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
-9. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages. Auto Braille automatically infers the script and pairs the matching Perkins input table.
+6. **Automatically detect math & STEM expressions and route to math table:** Toggles Math & STEM detection and lets you select the dedicated math table (e.g. `en-ueb-math.ctb`).
+7. **Hardware status cell language indicator:** Configure tactile language indicators on displays with physical status cells (Disabled, 2-letter, 1-letter, or Primary/Secondary dots).
+8. **Custom Lexicon / Dictionary Overrides...:** Open the dictionary manager to add, edit, or remove word-specific braille routing rules.
+9. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
+10. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
+11. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
+12. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages.
 
 ---
 
@@ -89,6 +105,22 @@ Auto Braille exposes commands under the **Auto Braille** category in NVDA's Inpu
 * **Toggles automatic universal multi-script braille translation on and off** (Unassigned by default).
 * **Cycles or toggles Perkins braille keyboard input language** (Unassigned by default).
 * **Announces the language and braille table at the caret or review cursor** (Recommended shortcut: `NVDA + Shift + L` or a key on your braille display).
+* **Cycles to the next active secondary braille table** (Unassigned &mdash; map freely to display keys/chords).
+* **Cycles to the next primary braille table** (Unassigned &mdash; map freely to display keys/chords).
+* **Toggles Math & STEM auto-detection on and off** (Unassigned &mdash; map freely to display keys/chords).
+
+---
+
+## Hardware Testing & Community Invitation
+
+> [!NOTE]
+> **Hardware Testing Notice:** I have developed and tested Auto Braille with a **Braille Edge 40 by HIMS**. Because refreshable braille displays vary significantly in driver behavior, firmware cell mappings, and physical status cell layouts across manufacturers (Focus, Brailliant, Orbit Reader, Alva, etc.), extensive testing across all refreshable braille displays is needed.
+>
+> This add-on serves as an open-source proof of concept for the blind and visually impaired community worldwide. If anyone would like to test, extend, or build upon this work, you are warmly welcome to do so!
+>
+> Furthermore, since I am not an expert in languages other than Persian and English, feedback and real-world testing from native braille readers in Arabic, German, French, Spanish, Russian, Turkish, CJK, Indic, and other languages would be very welcome.
+>
+> Please submit issues, test reports, and pull requests on GitHub: <https://github.com/alireza1385mamani/autoBraille>
 
 ---
 

@@ -359,6 +359,203 @@ class AutoDetectWizardDialog(wx.Dialog):
 		return results
 
 
+class EditCustomEntryDialog(wx.Dialog):
+	"""Modal dialog to create or edit an individual custom dictionary override rule."""
+
+	def __init__(
+		self,
+		parent: wx.Window,
+		pattern: str = "",
+		table: str = "",
+		case_sensitive: bool = False,
+		available_output_tables: Optional[List[Any]] = None,
+	) -> None:
+		# Translators: Title of the Edit Custom Dictionary Entry dialog
+		title = _("Edit Custom Dictionary Entry") if pattern else _("Add Custom Dictionary Entry")
+		super().__init__(parent, title=title)
+
+		self.output_tables = sorted(available_output_tables or [], key=lambda t: t.displayName.lower())
+		self.current_pattern = pattern
+		self.current_table = table
+		self.current_case_sensitive = case_sensitive
+
+		main_sizer = wx.BoxSizer(wx.VERTICAL)
+		sHelper = gui.guiHelper.BoxSizerHelper(self, sizer=main_sizer)
+
+		# Translators: Label for pattern or word text control in Custom Dictionary dialog
+		self.patternCtrl = sHelper.addLabeledControl(_("&Word or phrase to match:"), wx.TextCtrl)
+		self.patternCtrl.SetValue(pattern)
+
+		out_choices = [t.displayName for t in self.output_tables]
+		# Translators: Label for target braille table choice in Custom Dictionary dialog
+		self.tableChoice = sHelper.addLabeledControl(_("&Braille table:"), wx.Choice, choices=out_choices)
+
+		table_idx = 0
+		if table:
+			for idx, t in enumerate(self.output_tables):
+				if t.fileName == table:
+					table_idx = idx
+					break
+		self.tableChoice.SetSelection(table_idx)
+
+		# Translators: Checkbox label for case sensitivity in Custom Dictionary dialog
+		self.caseCb = sHelper.addItem(wx.CheckBox(self, label=_("&Case sensitive")))
+		self.caseCb.SetValue(case_sensitive)
+
+		btn_sizer = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+		if btn_sizer:
+			main_sizer.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
+
+		self.SetSizerAndFit(main_sizer)
+		self.CenterOnParent()
+
+	def get_result(self) -> Tuple[str, str, bool]:
+		pat = self.patternCtrl.GetValue().strip()
+		sel = self.tableChoice.GetSelection()
+		tbl = self.output_tables[sel].fileName if 0 <= sel < len(self.output_tables) else self.current_table
+		cs = self.caseCb.GetValue()
+		return pat, tbl, cs
+
+
+class CustomDictionaryDialog(wx.Dialog):
+	"""Modal dialog to manage custom word-to-table dictionary overrides."""
+
+	def __init__(
+		self,
+		parent: wx.Window,
+		entries: List[Dict[str, Any]],
+		available_output_tables: Optional[List[Any]] = None,
+	) -> None:
+		# Translators: Title of the Custom Lexicon / Dictionary dialog
+		super().__init__(parent, title=_("Custom Braille Dictionary"))
+
+		self.available_output_tables = sorted(available_output_tables or [], key=lambda t: t.displayName.lower())
+		self.tbl_names = {t.fileName: t.displayName for t in self.available_output_tables}
+		self.entries = [dict(e) for e in entries]
+
+		main_sizer = wx.BoxSizer(wx.VERTICAL)
+		sHelper = gui.guiHelper.BoxSizerHelper(self, sizer=main_sizer)
+
+		# Translators: Description in Custom Dictionary dialog
+		desc = wx.StaticText(
+			self,
+			label=_(
+				"Define custom words or phrases that should always be translated with a specific braille table:"
+			),
+		)
+		sHelper.addItem(desc)
+
+		self.listBox = wx.ListBox(self, style=wx.LB_SINGLE)
+		sHelper.addItem(self.listBox)
+		self.listBox.Bind(wx.EVT_LISTBOX_DCLICK, self.onEdit)
+		self.listBox.Bind(wx.EVT_CHAR_HOOK, self.onListKey)
+
+		btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+		# Translators: Button to add a new custom dictionary entry
+		self.addButton = wx.Button(self, label=_("&Add..."))
+		self.addButton.Bind(wx.EVT_BUTTON, self.onAdd)
+		btn_sizer.Add(self.addButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to edit the selected custom dictionary entry
+		self.editButton = wx.Button(self, label=_("&Edit..."))
+		self.editButton.Bind(wx.EVT_BUTTON, self.onEdit)
+		btn_sizer.Add(self.editButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to remove the selected custom dictionary entry
+		self.removeButton = wx.Button(self, label=_("&Remove"))
+		self.removeButton.Bind(wx.EVT_BUTTON, self.onRemove)
+		btn_sizer.Add(self.removeButton, 0)
+
+		sHelper.addItem(btn_sizer)
+
+		dialog_btn_sizer = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+		if dialog_btn_sizer:
+			main_sizer.Add(dialog_btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
+
+		self.refreshList()
+		self.SetSizerAndFit(main_sizer)
+		self.CenterOnParent()
+
+	def _format_entry(self, entry: Dict[str, Any]) -> str:
+		pat = entry.get("pattern", "")
+		tbl = entry.get("table", "")
+		tbl_disp = self.tbl_names.get(tbl, tbl)
+		cs = entry.get("case_sensitive", False)
+		# Translators: Indicator that entry matching is case sensitive
+		case_text = _("case-sensitive") if cs else _("case-insensitive")
+		return f'"{pat}"  →  {tbl_disp} ({tbl}) [{case_text}]'
+
+	def refreshList(self, select_idx: int = -1) -> None:
+		self.listBox.Clear()
+		for e in self.entries:
+			self.listBox.Append(self._format_entry(e))
+		if self.entries:
+			if 0 <= select_idx < len(self.entries):
+				self.listBox.SetSelection(select_idx)
+			else:
+				self.listBox.SetSelection(0)
+
+	def onListKey(self, event: wx.KeyEvent) -> None:
+		key = event.GetKeyCode()
+		if key == wx.WXK_DELETE:
+			self.onRemove(event)
+		elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+			self.onEdit(event)
+		else:
+			event.Skip()
+
+	def onAdd(self, event: wx.Event) -> None:
+		dlg = EditCustomEntryDialog(
+			self,
+			pattern="",
+			table=self.available_output_tables[0].fileName if self.available_output_tables else "",
+			case_sensitive=False,
+			available_output_tables=self.available_output_tables,
+		)
+		if dlg.ShowModal() == wx.ID_OK:
+			pat, tbl, cs = dlg.get_result()
+			if pat:
+				self.entries.append({
+					"pattern": pat,
+					"table": tbl,
+					"case_sensitive": cs,
+				})
+				self.refreshList(select_idx=len(self.entries) - 1)
+		dlg.Destroy()
+
+	def onEdit(self, event: wx.Event) -> None:
+		sel = self.listBox.GetSelection()
+		if sel == wx.NOT_FOUND or not (0 <= sel < len(self.entries)):
+			return
+		entry = self.entries[sel]
+		dlg = EditCustomEntryDialog(
+			self,
+			pattern=entry.get("pattern", ""),
+			table=entry.get("table", ""),
+			case_sensitive=entry.get("case_sensitive", False),
+			available_output_tables=self.available_output_tables,
+		)
+		if dlg.ShowModal() == wx.ID_OK:
+			pat, tbl, cs = dlg.get_result()
+			if pat:
+				entry["pattern"] = pat
+				entry["table"] = tbl
+				entry["case_sensitive"] = cs
+				self.refreshList(select_idx=sel)
+		dlg.Destroy()
+
+	def onRemove(self, event: wx.Event) -> None:
+		sel = self.listBox.GetSelection()
+		if sel == wx.NOT_FOUND or not (0 <= sel < len(self.entries)):
+			return
+		self.entries.pop(sel)
+		new_sel = min(sel, len(self.entries) - 1)
+		self.refreshList(select_idx=new_sel)
+
+	def get_entries(self) -> List[Dict[str, Any]]:
+		return self.entries
+
+
 # Aliases for backward compatibility
 AddLanguageDialog = AddTableDialog
 EditLanguageDialog = EditTableDialog

@@ -22,6 +22,7 @@ TEST_FILES = [
     "tests/test_grade2_boundary.py",
     "tests/test_auto_detect_keyboards.py",
     "tests/test_latin_sub_languages.py",
+    "tests/test_new_features.py",
 ]
 
 

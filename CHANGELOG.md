@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-09-27
+
+### Added
+- **Math & STEM Auto-Detection**:
+  - Automatically identifies inline mathematical expressions, equations, and LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`, `f(x) = 2x + 1`, `E = mc^2`, `<=`, `>=`, `!=`, etc.).
+  - Dynamically routes formula spans through dedicated math braille tables (e.g., `en-ueb-math.ctb` / Nemeth Code) while keeping surrounding prose in standard literary tables.
+  - Currency sign protection: Distinguishes LaTeX math delimiters from monetary amounts (`$50`, `$10.99`).
+  - Trailing punctuation shielding: Sentence periods, commas, and semicolons are separated from math spans to avoid syntax corruption.
+  - Grade 2 contraction exemption: Math tokens are protected from literary contraction rules.
+  - Settings UI toggle and custom math table selector dropdown in Auto Braille settings.
+- **Hardware Status Cell Language Indicators**:
+  - Renders tactile language indicators on physical status cells for 40-cell, 60-cell, and 80-cell braille displays (Focus, HIMS Braille Edge, Brailliant, Orbit Reader, Alva, etc.).
+  - Configurable modes: Off, 2-letter tactile indicator, 1-letter tactile indicator, or Primary/Secondary dot patterns.
+  - Displays standard tactile dot codes: `⠢⠝` (`en`), `⠋⠁` (`fa`), `⠙⠑` (`de`), `⠋⠗` (`fr`), `⠍⠁` (`math`), etc.
+  - Zero-overhead graceful fallback on displays without status cells (`numStatusCells == 0`).
+- **Application-Specific & Profile-Aware Braille Switching**:
+  - Automatically hooks `config.post_configProfileSwitch` to react instantly when switching NVDA configuration profiles or app triggers (e.g., Visual Studio, Word, terminal).
+  - Automatically clears translation caches, invalidates active tables, and re-renders braille on active displays immediately.
+- **Custom User Lexicon / Dictionary Overrides**:
+  - Allows users to define custom word- or symbol-specific braille routing rules via an intuitive GUI dialog (`CustomDictionaryDialog` & `EditCustomEntryDialog`).
+  - Supports custom table assignment and case-sensitivity per entry.
+  - Atomic word-boundary locked (`\b`) pre-partitioning before literary and math segmenters.
+- **Unassigned Braille Display Key Shortcuts / Chords**:
+  - Added new scripts to the `"Auto Braille"` NVDA Input Gestures category:
+    - `script_cycleSecondaryTable`: Rapidly cycle through secondary braille tables directly from the display.
+    - `script_cyclePrimaryTable`: Cycle through primary braille tables.
+    - `script_toggleMathDetection`: Instantly toggle Math & STEM auto-detection on/off.
+  - Left completely unassigned out-of-the-box to give users 100% freedom to map custom braille keys/chords without conflicting with existing display commands.
+- **Community Invitation & Hardware Testing Notice**:
+  - Verified on the HIMS Braille Edge 40 display; community testing on other refreshable braille displays is warmly invited.
+  - Documented as an open proof of concept for the international blind community, welcoming native readers of other languages to contribute.
+  - Roadmap section updated to reflect single-author status ("I" instead of "we").
+- **Dedicated Test Suite & Test Runner Expansion**:
+  - Added `tests/test_new_features.py` with 17 rigorous test cases covering all 5 new areas.
+  - Expanded `run_tests.py` to 9 comprehensive suites with 100% pass rate.
+
+---
+
 ## [1.0.5] - 2026-09-27
 
 ### Added
