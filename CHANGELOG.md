@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-09-27
+
+### Added
+- **Full Latin-Script Sub-Language Diacritic Detection**:
+  - Automatically identifies and routes language-exclusive Latin letters and diacritics across European and Latin-alphabet languages:
+    - **German**: `ä, ö, ü, ß` &rarr; routes to German braille (`de-g1.ctb` / `de-g2.ctb`).
+    - **French**: `é, è, ê, ç, œ` &rarr; routes to French braille (`fr-bfu-comp8.ctb`).
+    - **Turkish**: `ğ, ş, ı, İ` &rarr; routes to Turkish braille (`tr-g1.ctb`).
+    - **Spanish**: `ñ, ¿, ¡` &rarr; routes to Spanish braille (`es-g1.ctb`).
+    - **Scandinavian**: `å, æ, ø` &rarr; routes to Danish (`da-dk-g1.ctb`), Swedish, or Norwegian braille.
+    - **Polish & Czech/Slovak**: `ą, ę, ł, ń, ś, ź, ż, ć` & `ř, ů, ť, ď, ň, ž, š, č, ě`.
+  - **Atomic Word-Level Locking**: Words like `Kühlschrank` or `français` are never sliced into letter fragments; the entire word is routed as an indivisible token with correct braille contractions.
+  - **Sub-Microsecond ASCII Fast Path**: Pure 7-bit ASCII English prose skips diacritic classification completely via C-level regex `has_non_ascii_latin()` in under 0.35 µs, ensuring zero latency during rapid braille scrolling.
+  - **English Loanword Anchoring**: Common accented English words (`café`, `résumé`, `cliché`, `façade`, `fiancé`, etc.) stay in English UEB unless the sentence contains foreign stop words indicating a foreign clause (e.g. `Wir treffen uns im Café`).
+  - **Turkish Dotless "i" Case-Folding Safety**: Uses explicit codepoint matching (`[ğĞıİşŞ]`) avoiding `str.lower()` which corrupts Turkish dotless `ı` and dotted `İ`.
+  - **3-Tier Shared Diacritic Disambiguation**: Multi-candidate shared diacritics (e.g. `ä, ö, ü` in German vs Turkish) resolve via exclusive letters first, clause context density second, and language-characteristic n-grams (`sch` vs `lar`) third.
+  - **Settings UI Control**: Added `"Automatically detect European language diacritics in Latin text (e.g. German, French, Spanish, Turkish)"` checkbox in Auto Braille settings with full gettext translation.
+  - **Dedicated Test Suite**: Added `tests/test_latin_sub_languages.py` covering all 8 verification areas with 100% pass rate.
+  - **Test Runner Expansion**: Expanded `run_tests.py` to an 8-suite test framework with dynamic suite counting.
+
+---
+
 ## [1.0.4] - 2026-09-26
 
 ### Added

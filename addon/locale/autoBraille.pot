@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: autoBraille 1.0.4\n"
+"Project-Id-Version: autoBraille 1.0.5\n"
 "Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\n"
 "POT-Creation-Date: 2026-09-26 13:35+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -247,4 +247,9 @@ msgstr ""
 #. Translators: Announcement when input braille table is switched
 #: addon/globalPlugins/autoBraille/input_sync.py:525
 msgid "Braille input: %s"
+msgstr ""
+
+#. Translators: Checkbox label to automatically detect European language diacritics in Latin text
+#: addon/globalPlugins/autoBraille/__init__.py:150
+msgid "Automatically detect &European language diacritics in Latin text (e.g. German, French, Spanish, Turkish)"
 msgstr ""

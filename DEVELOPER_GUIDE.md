@@ -16,10 +16,11 @@ Welcome to the **Auto Braille** developer guide! This document provides an exhau
 8. [Deep Dive: Contracted Braille (Grade 2) & Boundary Guarding](#8-deep-dive-contracted-braille-grade-2--boundary-guarding)
 9. [Deep Dive: 3-Tier Multi-Language Architecture & Intra-Script Disambiguation](#9-deep-dive-3-tier-multi-language-architecture--intra-script-disambiguation)
 10. [Deep Dive: One-Click Setup Wizard & Windows Keyboard Detection](#10-deep-dive-one-click-setup-wizard--windows-keyboard-detection)
-11. [Adding New Writing Systems & Liblouis Tables](#11-adding-new-writing-systems--liblouis-tables)
-12. [Localization & Internationalization (gettext)](#12-localization--internationalization-gettext)
-13. [Build System & Automated CI/CD](#13-build-system--automated-cicd)
-14. [Test Suites & Quality Assurance](#14-test-suites--quality-assurance)
+11. [Deep Dive: Latin-Script Sub-Language Diacritic Detection](#11-deep-dive-latin-script-sub-language-diacritic-detection)
+12. [Adding New Writing Systems & Liblouis Tables](#12-adding-new-writing-systems--liblouis-tables)
+13. [Localization & Internationalization (gettext)](#13-localization--internationalization-gettext)
+14. [Build System & Automated CI/CD](#14-build-system--automated-cicd)
+15. [Test Suites & Quality Assurance](#15-test-suites--quality-assurance)
 
 ---
 
@@ -329,7 +330,59 @@ To handle dozens of regional Windows dialects (e.g. UK vs US English; Saudi vs E
 
 ---
 
-## 11. Adding New Writing Systems & Liblouis Tables
+## 11. Deep Dive: Latin-Script Sub-Language Diacritic Detection
+
+Historically, all European and Latin-alphabet languages (English, German, French, Spanish, Turkish, etc.) share the common Latin script block (`[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]`), meaning standard script detectors treat them as a single uniform language. When reading mixed European literature or technical texts, German umlauts (`ä, ö, ü, ß`), French ligatures (`œ, ç`), and Turkish dotless characters (`ı, ğ, ş`) were either mangled or miscontracted by English UEB.
+
+Auto Braille implements a **6-Layer Diacritic Detection & Word-Locking Pipeline**:
+
+```mermaid
+flowchart TD
+    LatinText["Latin Text Run (e.g. 'The German word is Kühlschrank.')"] --> AsciiCheck{"has_non_ascii_latin()?"}
+    AsciiCheck -- "No (Pure 7-bit ASCII)" --> FastPath["Bypass Diacritic Routing (< 0.35 µs) -> Primary UEB"]
+    AsciiCheck -- "Yes (Accents Detected)" --> Tokenizer["LATIN_WORD_TOKEN_PATTERN (Atomic Word Locking)"]
+    
+    subgraph Classification ["Word-Level Disambiguation Pipeline"]
+        Tokenizer --> LoanCheck{"In ENGLISH_ACCENTED_LOANWORDS?"}
+        LoanCheck -- "Yes ('café', 'résumé')" --> ClauseForeign{"2+ Foreign Stop Words in Clause?"}
+        ClauseForeign -- "No (English context)" --> KeepUEB["Stay in English UEB"]
+        ClauseForeign -- "Yes (Foreign clause)" --> RouteLang["Route to Foreign Table"]
+        LoanCheck -- "No" --> ExclCheck{"Exclusive Letter Marker? (ß, ğ, ı, ñ, æ, ø)"}
+        ExclCheck -- "Yes" --> RouteLang
+        ExclCheck -- "No" --> SharedCheck{"Shared Diacritic? (ä, ö, ü)"}
+        SharedCheck --> TierDisambig["Context Density & N-Gram Tie Breaking"]
+        TierDisambig --> RouteLang
+    end
+    
+    KeepUEB --> OutputChain["resolve_segment_table() -> Louis Translation Chain"]
+    RouteLang --> OutputChain
+    FastPath --> OutputChain
+```
+
+### 1. Atomic Word-Level Locking (`segment_latin_sub_languages`)
+Words are never sliced into isolated character pieces. When `Kühlschrank` or `français` is encountered, the word boundary scanner locks the entire word token, routing the full word to `de-g1.ctb` or `fr-bfu-comp8.ctb`.
+
+### 2. Sub-Microsecond Pure ASCII Fast Path (`has_non_ascii_latin`)
+Since over 95% of standard reading material is 7-bit ASCII, Auto Braille evaluates `re.search(r"[\u00C0-\u024F\u1E00-\u1EFF¿¡]", text)` at the C level. Pure ASCII sentences bypass diacritic parsing completely in **under 0.35 microseconds**, ensuring zero scroll latency.
+
+### 3. English Loanword Anchoring (`ENGLISH_ACCENTED_LOANWORDS`)
+Loanwords such as `café`, `résumé`, `cliché`, `façade`, and `fiancé` stay in English UEB during English reading. Only when a clause contains 2 or more foreign stop words (e.g., German `Wir treffen uns im Café`) does Auto Braille switch to the foreign table.
+
+### 4. Turkish Dotless "i" Case-Folding Safety
+Python's default `str.lower()` on Windows corrupts Turkish `I` (U+0049) into dotted `i` (U+0069), losing the critical distinction between dotless `ı` (U+0131) and dotted `İ` (U+0130). Auto Braille performs matching against explicit codepoint pairs `[ğĞıİşŞ]`, guaranteeing 100% orthographic integrity.
+
+### 5. 3-Tier Shared Diacritic Disambiguation
+When multiple active Latin tables share diacritics (e.g., German `de-g1.ctb` vs. Turkish `tr-g1.ctb` for `ü, ö`):
+1. **Exclusive Letters:** German `ß` or Turkish `[ğĞıİşŞ]` resolves immediately.
+2. **Clause Density:** Foreign stop words and exclusive characters anywhere in the sentence give a +10 boost to that language.
+3. **Characteristic N-Grams:** Characteristic consonant clusters (`sch`, `tz`, `ck` for German; `lar`, `ler`, `den` for Turkish) break remaining ties.
+
+### 6. Grade 2 Contracted Braille Boundary Guarding
+Transitions between English UEB Grade 2 and foreign Latin tables are protected by `grade2BoundaryGuard`, preventing accidental single-letter word-signs (`b` &rarr; "but") or technical identifier contractions across language boundaries.
+
+---
+
+## 12. Adding New Writing Systems & Liblouis Tables
 
 To register a new writing system, edit `addon/globalPlugins/autoBraille/scripts_data.py`:
 ```python
@@ -359,7 +412,7 @@ Auto Braille's dynamic configuration, GUI dialogs, table-to-script resolution, a
 
 ---
 
-## 12. Localization & Internationalization (gettext)
+## 13. Localization & Internationalization (gettext)
 
 Auto Braille strictly enforces NVDA Add-on Store standards for translatability:
 
@@ -377,14 +430,14 @@ Auto Braille includes a zero-dependency AST parser [generate_pot.py](file:///c:/
 ```bash
 py.exe generate_pot.py
 ```
-This generates `addon/locale/autoBraille.pot` with all 44+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
+This generates `addon/locale/autoBraille.pot` with all 45+ translatable messages, their exact line references, and associated `# Translators:` guidance comments.
 
 ### 3. Adding Translated PO Files
 Translators create `addon/locale/<lang>/LC_MESSAGES/autoBraille.po` using POEdit or standard gettext tools. During packaging, `build.py` automatically bundles all compiled catalogs.
 
 ---
 
-## 13. Build System & Automated CI/CD
+## 14. Build System & Automated CI/CD
 
 ### Building via Python (`build.py`)
 ### Python Version Support (Python 3.14 Default & 3.11 Backward Compatibility)
@@ -395,7 +448,7 @@ Auto Braille utilizes a standalone packaging script:
 python build.py
 ```
 This automatically verifies bytecode compilation across all source modules with `py_compile`, inspects `addon/manifest.ini`, excludes bytecode (`.pyc`, `__pycache__`) and development files, and packages a clean distributable archive:
-`dist/autoBraille-1.0.3.nvda-addon`
+`dist/autoBraille-1.0.5.nvda-addon`
 
 ### Building via PowerShell (`build.ps1`)
 On Windows, you can package and optionally run all tests in one step:
@@ -405,13 +458,13 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 
 ### GitHub Actions CI/CD (`.github/workflows/release.yml`)
 * Pushes and PRs on `main` execute unit tests across a matrix of Windows runners testing **Python 3.14** and **Python 3.11**.
-* Pushing a version tag (`v*`, e.g. `v1.0.3`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
+* Pushing a version tag (`v*`, e.g. `v1.0.5`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
 
 ---
 
-## 14. Test Suites & Quality Assurance
+## 15. Test Suites & Quality Assurance
 
-Auto Braille features a comprehensive 7-suite offline testing framework requiring zero running NVDA instances:
+Auto Braille features a comprehensive 8-suite offline testing framework requiring zero running NVDA instances:
 
 | Suite | File Path | Focus Area |
 | :--- | :--- | :--- |
@@ -422,10 +475,11 @@ Auto Braille features a comprehensive 7-suite offline testing framework requirin
 | **Intra-Script** | `tests/test_intra_script.py` | 3-tier language detection, exclusive lexical marker scoring (Persian vs Arabic, Ukrainian/Belarusian vs Russian, Urdu/Kurdish), n-gram frequency fallback, and document tag override. |
 | **Grade 2 Boundary** | `tests/test_grade2_boundary.py` | Contracted Braille companion mapping, boundary guarding for single-letter wordsigns (`b` -> `but` prevention), code identifiers (`user_id`), numeric boundaries (`123b`), and cursor routing offset preservation. |
 | **Auto-Detect Keyboards** | `tests/test_auto_detect_keyboards.py` | 64-bit safe `GetKeyboardLayoutList`, read-only registry sanitization, 3-tier dialect resolution, variant deduplication, primary table protection, Liblouis catalog validation, and wizard UI integration. |
+| **Latin Sub-Languages** | `tests/test_latin_sub_languages.py` | Sub-microsecond pure ASCII fast path (< 0.35 µs), German atomic word locking (`Kühlschrank`, `Straße`), French accents/ligatures (`cœur`, `français`), Turkish dotless `ı`/dotted `İ` preservation without case-folding corruption, Spanish/Scandinavian diacritic routing, English loanword stability (`café`), and 3-tier shared disambiguation. |
 
 ### Running Unit Tests
 
-Run all 7 test suites along with bytecode compilation checks in a single command using the unified test runner:
+Run all 8 test suites along with bytecode compilation checks in a single command using the unified test runner:
 ```bash
 python run_tests.py
 ```
@@ -439,6 +493,7 @@ python tests/test_segmenter.py
 python tests/test_intra_script.py
 python tests/test_grade2_boundary.py
 python tests/test_auto_detect_keyboards.py
+python tests/test_latin_sub_languages.py
 ```
 Or run the complete suite automatically through `build.ps1 -RunTests`.
 

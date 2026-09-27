@@ -199,6 +199,21 @@ def get_candidate_tables_for_script(script_name: str, active_tables: Optional[Li
 	return candidates
 
 
+def get_active_latin_tables(active_tables: Optional[List[str]] = None) -> List[str]:
+	"""Return list of active Latin-script braille tables, with primary Latin table first."""
+	primary_tbl = get_primary_table(active_tables)
+	latin_tables: List[str] = []
+	if scripts_data.is_latin_table(primary_tbl):
+		latin_tables.append(primary_tbl)
+
+	sec_tables = get_active_secondary_tables() if active_tables is None else active_tables
+	for tbl in sec_tables:
+		if scripts_data.is_latin_table(tbl) and tbl not in latin_tables:
+			latin_tables.append(tbl)
+
+	return latin_tables
+
+
 def get_script_table_chain(
 	script_name: str,
 	active_tables: List[str],
@@ -223,12 +238,22 @@ def segment_with_doc_langs(
 	doc_lang_spans: Optional[List[Tuple[int, int, str]]],
 	enabled_scripts: Set[str],
 	primary_script: str,
+	active_latin_tables: Optional[List[str]] = None,
+	detect_latin_sub_languages: bool = True,
+	primary_table: str = "en-ueb-g1.ctb",
 ) -> List[Tuple[str, int, int, str]]:
 	"""Segment text respecting official document language tags when accurate, falling back to script detection."""
 	if not inbuf:
 		return []
 	if not doc_lang_spans:
-		return segmenter.segment_text(inbuf, enabled_scripts=enabled_scripts, primary_script=primary_script)
+		return segmenter.segment_text(
+			inbuf,
+			enabled_scripts=enabled_scripts,
+			primary_script=primary_script,
+			active_latin_tables=active_latin_tables,
+			detect_latin_sub_languages=detect_latin_sub_languages,
+			primary_table=primary_table,
+		)
 
 	text_len = len(inbuf)
 	raw_spans: List[Tuple[int, int, Optional[str]]] = []
@@ -254,7 +279,14 @@ def segment_with_doc_langs(
 		if s_info and scripts_data.is_script_compatible(chunk, s_info.id):
 			tagged_segments.append((chunk, start, end, s_info.id, lang))
 		else:
-			sub_segs = segmenter.segment_text(chunk, enabled_scripts=enabled_scripts, primary_script=primary_script)
+			sub_segs = segmenter.segment_text(
+				chunk,
+				enabled_scripts=enabled_scripts,
+				primary_script=primary_script,
+				active_latin_tables=active_latin_tables,
+				detect_latin_sub_languages=detect_latin_sub_languages,
+				primary_table=primary_table,
+			)
 			for sub_text, sub_start, sub_end, sub_script in sub_segs:
 				tagged_segments.append((sub_text, start + sub_start, start + sub_end, sub_script, None))
 
@@ -286,7 +318,11 @@ def resolve_segment_table(
 	"""Determine the exact table chain for a segment based on doc markup, candidate tables, and text."""
 	target_chain: Optional[List[str]] = None
 
-	if doc_lang_spans:
+	if script.startswith("latin:"):
+		tbl_name = script.split(":", 1)[1]
+		target_chain = get_table_chain_for_file(tbl_name)
+
+	if not target_chain and doc_lang_spans:
 		for s_start, s_end, lang in doc_lang_spans:
 			if lang and (s_start <= start_idx < s_end or s_start < end_idx <= s_end):
 				doc_tbl = scripts_data.resolve_doc_lang_to_table(lang)
@@ -340,18 +376,33 @@ def multi_script_translate(
 	"""Translate mixed-script text by segmenting and re-mapping cursor and routing positions."""
 	primary_script = get_primary_script(active_tables)
 	enabled_scripts = get_enabled_scripts(active_tables)
-	honor_doc = config.conf.get("autoBraille", {}).get("honorDocumentLang", True)
-	tactile_marker = config.conf.get("autoBraille", {}).get("tactileMarker", "none")
+	cfg_ab = config.conf.get("autoBraille", {})
+	honor_doc = cfg_ab.get("honorDocumentLang", True)
+	tactile_marker = cfg_ab.get("tactileMarker", "none")
+	detect_latin_sub = cfg_ab.get("detectLatinSubLanguages", True)
 	primary_chain = get_script_table_chain(primary_script, active_tables)
+	primary_table = get_primary_table(active_tables)
+	active_latin_tables = get_active_latin_tables(active_tables)
 
 	try:
 		if honor_doc and doc_lang_spans:
 			segments = segment_with_doc_langs(
-				inbuf, doc_lang_spans, enabled_scripts=enabled_scripts, primary_script=primary_script
+				inbuf,
+				doc_lang_spans,
+				enabled_scripts=enabled_scripts,
+				primary_script=primary_script,
+				active_latin_tables=active_latin_tables,
+				detect_latin_sub_languages=detect_latin_sub,
+				primary_table=primary_table,
 			)
 		else:
 			segments = segmenter.segment_text(
-				inbuf, enabled_scripts=enabled_scripts, primary_script=primary_script
+				inbuf,
+				enabled_scripts=enabled_scripts,
+				primary_script=primary_script,
+				active_latin_tables=active_latin_tables,
+				detect_latin_sub_languages=detect_latin_sub,
+				primary_table=primary_table,
 			)
 	except Exception:
 		log.warning("Auto Braille segmentation failed; falling back to single table", exc_info=True)

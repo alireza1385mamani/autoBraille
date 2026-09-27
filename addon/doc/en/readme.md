@@ -37,13 +37,26 @@
 * **Code & Identifier Protection:** Programming variables and technical identifiers (such as `user_id`, `file_name`, `camelCase`, or file paths) are protected from literary contractions so you can read and debug code accurately.
 * **Numeric Boundary Lookback:** Letters immediately following numbers across language boundaries (e.g. `123b` or `۱۲۳a`) are protected from digit-letter bleeding.
 
-### 6. 3-Tier Multi-Language Architecture & Loanword Absorption
+### 6. Full Latin-Script Sub-Language Diacritic Detection
+* **Automatic Diacritic Routing:** Recognizes language-exclusive Latin letters and diacritics across European languages:
+  - **German:** `ä`, `ö`, `ü`, `ß` &rarr; automatically invokes German braille (`de-g1.ctb` / `de-g2.ctb`).
+  - **French:** `é`, `è`, `ê`, `ç`, `œ` &rarr; automatically invokes French braille (`fr-bfu-comp8.ctb`).
+  - **Turkish:** `ğ`, `ş`, `ı`, `İ` &rarr; automatically invokes Turkish braille (`tr-g1.ctb`).
+  - **Spanish:** `ñ`, `¿`, `¡` &rarr; automatically invokes Spanish braille (`es-g1.ctb`).
+  - **Scandinavian:** `å`, `æ`, `ø` &rarr; automatically invokes Danish (`da-dk-g1.ctb`), Swedish, or Norwegian braille.
+  - **Polish & Czech/Slovak:** `ą, ę, ł, ń, ś, ź, ż, ć` & `ř, ů, ť, ď, ň, ž, š, č, ě`.
+* **Atomic Word-Level Locking:** Words like `Kühlschrank` or `français` are never sliced mid-word; the entire word routes as an indivisible token with correct braille contractions.
+* **Sub-Microsecond ASCII Fast Path:** Pure 7-bit ASCII English text bypasses diacritic classification in `< 0.35 µs`, ensuring zero latency during rapid scrolling.
+* **English Loanword Anchoring:** Common accented English words (`café`, `résumé`, `cliché`, `façade`, `fiancé`) stay in English UEB unless surrounding context contains foreign stop words.
+* **Turkish Dotless "i" Case-Folding Safety:** Codepoints `[ğĞıİşŞ]` are preserved without case-folding corruption.
+
+### 7. 3-Tier Multi-Language Architecture & Loanword Absorption
 * **Zero Flapping on Loanwords:** Persian words with Arabic letters (e.g. `دایرة‌المعارف`, `نهایة`, `خاصةً`) and English words with accents (`café`, `résumé`, `über`) stay stably in their native table with zero mid-sentence flapping.
-* **Intra-Script Disambiguation:** When both Persian and Arabic, or English and French/German tables are active, multi-word grammatical clauses (e.g. `قال المعلم: في التأني السلامة`) are automatically routed to the correct language using grammatical stop-word phrase density.
+* **Intra-Script Disambiguation:** When both Persian and Arabic, or English and French/German tables are active, multi-word grammatical clauses (e.g. `قال المعلم: في التأنی السلامة`) are automatically routed to the correct language using grammatical stop-word phrase density.
 * **Dynamic Defaults for Non-Latin Primary Users:** If your NVDA primary translation table is Persian (`fa-ir-g1.utb`), Arabic (`ar-ar-g1.utb`), or Russian (`ru-litbrl.ctb`), Auto Braille automatically defaults its secondary table to English UEB out of the box!
 * **Specific Language Announcements:** Caret language announcements report the precise language name (e.g. "Persian", "Arabic", "English (Unified)", "French") rather than broad script categories.
 
-### 7. One-Click Setup Wizard (Auto-Detect Windows Keyboards)
+### 8. One-Click Setup Wizard (Auto-Detect Windows Keyboards)
 * **Instant Automatic Setup:** Click **Auto-Detect Keyboards...** in the settings panel to automatically scan your installed Windows keyboard layouts (e.g. Persian, Arabic, Russian, English, French, German).
 * **Smart Liblouis Mapping:** Auto Braille matches each keyboard to its recommended braille output table and Perkins input table, while preserving your primary language and eliminating duplicate entries.
 * **In-Place Customization:** An accessible preview dialog displays all detected keyboard languages. Select any item and click **Edit Table...** to customize its output or Perkins input table before applying!
@@ -61,10 +74,11 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 2. **Automatically sync Perkins braille input with active Windows keyboard layout:** Master toggle for real-time Perkins input table switching.
 3. **Honor document language tags in web and office documents:** Prioritize official HTML/Word `lang` tags when accurate.
 4. **Protect isolated letters and code identifiers in Contracted Braille (Grade 2):** Safeguards single-letter variables and technical identifiers against accidental contractions.
-5. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
-6. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
-7. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
-8. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages. Auto Braille automatically infers the script and pairs the matching Perkins input table.
+5. **Automatically detect European language diacritics in Latin text:** Detects language-specific accented characters and routes words to the appropriate European braille table.
+6. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
+7. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
+8. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
+9. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages. Auto Braille automatically infers the script and pairs the matching Perkins input table.
 
 ---
 

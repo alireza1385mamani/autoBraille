@@ -31,7 +31,7 @@
     <h1>Auto Braille: Universal Multi-Script In-Line Translation &amp; Perkins Input for NVDA</h1>
     
     <div class="meta">
-        <p><strong>Version:</strong> 1.0.4 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.3+ | <strong>License:</strong> GNU General Public License v2.0</p>
+        <p><strong>Version:</strong> 1.0.5 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.3+ | <strong>License:</strong> GNU General Public License v2.0</p>
         <p><strong>Author:</strong> Alireza Mamani &amp; Antigravity (&lt;<a href="https://github.com/alireza1385mamani">https://github.com/alireza1385mamani</a>&gt;)<br>
         <strong>Repository:</strong> &lt;<a href="https://github.com/alireza1385mamani/autoBraille">https://github.com/alireza1385mamani/autoBraille</a>&gt;</p>
     </div>
@@ -79,14 +79,23 @@
         <li><strong>Numeric Boundary Lookback:</strong> Letters immediately following digits across boundaries (e.g. <code>123b</code>) are shielded from digit-letter contraction bleed.</li>
     </ul>
 
-    <h3>6. 3-Tier Multi-Language Architecture &amp; Loanword Stability</h3>
+    <h3>6. Full Latin-Script Sub-Language Diacritic Detection</h3>
+    <ul>
+        <li><strong>Automatic Diacritic Routing:</strong> Recognizes language-exclusive Latin letters and diacritics across European languages: German (<code>ä, ö, ü, ß</code>), French (<code>é, è, ê, ç, œ</code>), Turkish (<code>ğ, ş, ı, İ</code>), Spanish (<code>ñ, ¿, ¡</code>), Scandinavian (<code>å, æ, ø</code>), and Polish/Czech.</li>
+        <li><strong>Atomic Word-Level Locking:</strong> Words like <code>Kühlschrank</code> and <code>français</code> are never sliced into pieces mid-word; the entire word routes as an indivisible token.</li>
+        <li><strong>Sub-Microsecond Pure ASCII Fast Path:</strong> Pure 7-bit ASCII English text bypasses diacritic classification in &lt; 0.35 &micro;s.</li>
+        <li><strong>English Loanword Anchoring:</strong> Accented English words (<code>café</code>, <code>résumé</code>, <code>cliché</code>, <code>façade</code>) stay in English UEB unless surrounding context indicates a foreign language clause.</li>
+        <li><strong>Turkish Dotless "i" Safety:</strong> Codepoints <code>[ğĞıİşŞ]</code> are preserved without case-folding corruption.</li>
+    </ul>
+
+    <h3>7. 3-Tier Multi-Language Architecture &amp; Loanword Stability</h3>
     <ul>
         <li><strong>Zero Flapping on Loanwords:</strong> Persian words with Arabic letters (such as <code>دایرة‌المعارف</code>, <code>نهایة</code>) and English words with accents (<code>café</code>, <code>résumé</code>) remain stably in their native table.</li>
         <li><strong>Intra-Script Disambiguation:</strong> When both Persian and Arabic, or English and French/German tables are active, multi-word grammatical clauses (such as <code>قال المعلم: في التأني السلامة</code>) are automatically routed using grammatical stop-word phrase density.</li>
         <li><strong>Dynamic Secondary Defaults:</strong> If your primary NVDA table is Persian, Arabic, or Russian, Auto Braille automatically defaults its secondary table to English UEB out of the box.</li>
     </ul>
 
-    <h3>7. One-Click Setup Wizard (Auto-Detect Windows Keyboards)</h3>
+    <h3>8. One-Click Setup Wizard (Auto-Detect Windows Keyboards)</h3>
     <ul>
         <li><strong>Instant Automatic Setup:</strong> Click <strong>Auto-Detect Keyboards...</strong> in settings to scan your installed Windows keyboard layouts.</li>
         <li><strong>Smart Liblouis Mapping:</strong> Matches each keyboard to its recommended braille output and Perkins input table, while preserving your primary language and eliminating duplicate dialects.</li>
@@ -104,6 +113,7 @@
         <li><strong>Automatically sync Perkins braille input with active Windows keyboard layout:</strong> Master toggle for real-time Perkins input table switching.</li>
         <li><strong>Honor document language tags in web and office documents:</strong> Prioritize official HTML/Word <code>lang</code> tags when accurate.</li>
         <li><strong>Protect isolated letters and code identifiers in Contracted Braille (Grade 2):</strong> Safeguards single-letter variables and technical identifiers against accidental contractions.</li>
+        <li><strong>Automatically detect European language diacritics in Latin text:</strong> Detects language-specific accented characters and routes words to the appropriate European braille table.</li>
         <li><strong>Tactile indicator for language boundaries:</strong> Select your preferred pin indicator (None, Dot 8, Dot 7, or Dots 7 and 8 underline).</li>
         <li><strong>Primary output braille table:</strong> Select your default output table from all installed Liblouis tables, or choose <em>Automatic (Use active NVDA output table)</em>.</li>
         <li><strong>Primary Perkins input braille table:</strong> Select your default Perkins input table, or choose <em>Automatic (Follow active NVDA input table)</em>.</li>

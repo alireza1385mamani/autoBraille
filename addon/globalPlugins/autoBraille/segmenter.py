@@ -95,11 +95,149 @@ def has_secondary_scripts(text: str, secondary_scripts: Set[str]) -> bool:
 	return bool(pattern.search(text))
 
 
+LATIN_WORD_TOKEN_PATTERN: re.Pattern[str] = re.compile(
+	r"[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF¿¡]+(?:['’][a-zA-Z\u00C0-\u024F\u1E00-\u1EFF¿¡]+)?"
+)
+
+
+def segment_latin_sub_languages(
+	text: str,
+	active_latin_tables: List[str],
+	primary_table: str = "en-ueb-g1.ctb",
+	base_offset: int = 0,
+) -> List[Tuple[str, int, int, str]]:
+	"""Partition a Latin-script text block into sub-language segments based on diacritics and word markers.
+
+	Guarantees:
+	- Atomic word-level locking: words like 'Kühlschrank' or 'français' are never sliced mid-word.
+	- Sub-microsecond pure ASCII fast path via scripts_data.has_non_ascii_latin().
+	- Invariant: ''.join(seg[0] for seg in segments) == text with exact global offsets.
+	"""
+	if not text:
+		return []
+
+	# Sub-microsecond fast-path check: If 0 or 1 Latin table, or pure 7-bit ASCII, return immediately
+	if len(active_latin_tables) <= 1 or not scripts_data.has_non_ascii_latin(text):
+		return [(text, base_offset, base_offset + len(text), "latin")]
+
+	matches = list(LATIN_WORD_TOKEN_PATTERN.finditer(text))
+	if not matches:
+		return [(text, base_offset, base_offset + len(text), "latin")]
+
+	word_tags: List[Tuple[int, int, str]] = []
+	has_any_sub_lang = False
+
+	for m in matches:
+		w_text = m.group(0)
+		sub_tbl = scripts_data.detect_latin_sub_language_for_word(
+			w_text,
+			active_latin_tables,
+			primary_table=primary_table,
+			clause_context=text,
+		)
+		if sub_tbl and sub_tbl != primary_table:
+			tag = f"latin:{sub_tbl}"
+			has_any_sub_lang = True
+		else:
+			tag = "latin"
+		word_tags.append((m.start(), m.end(), tag))
+
+	if not has_any_sub_lang:
+		return [(text, base_offset, base_offset + len(text), "latin")]
+
+	# Single-table optimization: if all words belong to the exact same foreign sub-language
+	first_tag = word_tags[0][2]
+	if first_tag != "latin" and all(wt[2] == first_tag for wt in word_tags):
+		return [(text, base_offset, base_offset + len(text), first_tag)]
+
+	raw_spans: List[Tuple[int, int, str]] = []
+	n = len(text)
+
+	# 1. Leading neutral gap
+	first_start, first_end, first_type = word_tags[0]
+	if first_start > 0:
+		raw_spans.append((0, first_start, first_type))
+	raw_spans.append((first_start, first_end, first_type))
+
+	# 2. Intermediate matches and gaps
+	for i in range(len(word_tags) - 1):
+		cur_start, cur_end, cur_type = word_tags[i]
+		next_start, next_end, next_type = word_tags[i + 1]
+
+		if cur_end < next_start:
+			gap_text = text[cur_end:next_start]
+			split_point = cur_end + len(gap_text) // 2
+
+			found = False
+			for idx, ch in enumerate(gap_text):
+				if ch in OPENING_PUNCT:
+					split_point = cur_end + idx
+					found = True
+					break
+			if not found:
+				for idx in range(len(gap_text) - 1, -1, -1):
+					if gap_text[idx] in CLOSING_PUNCT:
+						split_point = cur_end + idx + 1
+						found = True
+						break
+			if not found:
+				space_idx = gap_text.find(" ")
+				if space_idx != -1:
+					split_point = cur_end + space_idx + 1
+
+			raw_spans.append((cur_end, split_point, cur_type))
+			raw_spans.append((split_point, next_start, next_type))
+
+		raw_spans.append((next_start, next_end, next_type))
+
+	# 3. Trailing neutral gap
+	last_end = word_tags[-1][1]
+	last_type = word_tags[-1][2]
+	if last_end < n:
+		raw_spans.append((last_end, n, last_type))
+
+	# 4. Merge adjacent spans of the same tag
+	merged: List[Tuple[str, int, int, str]] = []
+	cur_seg_start = raw_spans[0][0]
+	cur_seg_end = raw_spans[0][1]
+	cur_seg_type = raw_spans[0][2]
+
+	for start, end, s_type in raw_spans[1:]:
+		if start == end:
+			continue
+		if s_type == cur_seg_type and start == cur_seg_end:
+			cur_seg_end = end
+		else:
+			if cur_seg_end > cur_seg_start:
+				merged.append((
+					text[cur_seg_start:cur_seg_end],
+					base_offset + cur_seg_start,
+					base_offset + cur_seg_end,
+					cur_seg_type,
+				))
+			cur_seg_start = start
+			cur_seg_end = end
+			cur_seg_type = s_type
+
+	if cur_seg_end > cur_seg_start:
+		merged.append((
+			text[cur_seg_start:cur_seg_end],
+			base_offset + cur_seg_start,
+			base_offset + cur_seg_end,
+			cur_seg_type,
+		))
+
+	return merged
+
+
 def segment_text(
 	text: str,
 	enabled_scripts: Optional[Set[str]] = None,
 	primary_script: str = "latin",
 	default_script: Optional[str] = None,
+	active_latin_tables: Optional[List[str]] = None,
+	detect_latin_sub_languages: bool = True,
+	primary_table: str = "en-ueb-g1.ctb",
 ) -> List[Tuple[str, int, int, str]]:
 	"""Partition text into contiguous (slice_text, start_index, end_index, script) segments.
 
@@ -117,12 +255,29 @@ def segment_text(
 	if enabled_scripts is None:
 		enabled_scripts = set(scripts_data.get_all_script_ids())
 
+	def _apply_latin_sub_languages(segs: List[Tuple[str, int, int, str]]) -> List[Tuple[str, int, int, str]]:
+		if not detect_latin_sub_languages or not active_latin_tables or len(active_latin_tables) <= 1:
+			return segs
+		result: List[Tuple[str, int, int, str]] = []
+		for s_text, s_start, s_end, s_type in segs:
+			if s_type == "latin" and scripts_data.has_non_ascii_latin(s_text):
+				sub_segs = segment_latin_sub_languages(
+					s_text,
+					active_latin_tables,
+					primary_table=primary_table,
+					base_offset=s_start,
+				)
+				result.extend(sub_segs)
+			else:
+				result.append((s_text, s_start, s_end, s_type))
+		return result
+
 	# Secondary scripts are any enabled scripts other than the primary script
 	secondary_scripts = {s for s in enabled_scripts if s != primary_script}
 
 	# Instant fast-path: If text has no secondary script characters, return as whole segment
 	if not has_secondary_scripts(text, secondary_scripts):
-		return [(text, 0, len(text), primary_script)]
+		return _apply_latin_sub_languages([(text, 0, len(text), primary_script)])
 
 	scanner = get_scanner_regex(enabled_scripts)
 
@@ -134,12 +289,12 @@ def segment_text(
 	]
 
 	if not raw_matches:
-		return [(text, 0, len(text), primary_script)]
+		return _apply_latin_sub_languages([(text, 0, len(text), primary_script)])
 
 	# Pure single-script optimization: If all matches belong to the same script
 	first_script = raw_matches[0][2]
 	if all(m[2] == first_script for m in raw_matches):
-		return [(text, 0, len(text), first_script)]
+		return _apply_latin_sub_languages([(text, 0, len(text), first_script)])
 
 	# Resolve neutral characters (punctuation, whitespace, brackets) between script runs
 	raw_spans: List[Tuple[int, int, str]] = []
@@ -217,6 +372,6 @@ def segment_text(
 	if cur_seg_end > cur_seg_start:
 		merged.append((text[cur_seg_start:cur_seg_end], cur_seg_start, cur_seg_end, cur_seg_type))
 
-	return merged
+	return _apply_latin_sub_languages(merged)
 
 

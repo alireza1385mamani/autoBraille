@@ -55,6 +55,7 @@ confspec: Dict[str, str] = {
 	"tactileMarker": "string(default=none)",
 	"honorDocumentLang": "boolean(default=True)",
 	"grade2BoundaryGuard": "boolean(default=True)",
+	"detectLatinSubLanguages": "boolean(default=True)",
 	# Legacy keys for backward compatibility with existing configs
 	"enableArabicPersian": "boolean(default=True)",
 	"tableArabicPersian": "string(default=fa-ir-g1.utb)",
@@ -144,6 +145,17 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 			)
 		)
 		self.grade2GuardCb.SetValue(cfg.get("grade2BoundaryGuard", True))
+
+		# Translators: Checkbox label to automatically detect European language diacritics in Latin text
+		self.detectLatinSubLanguagesCb = sHelper.addItem(
+			wx.CheckBox(
+				self,
+				label=_(
+					"Automatically detect &European language diacritics in Latin text (e.g. German, French, Spanish, Turkish)"
+				),
+			)
+		)
+		self.detectLatinSubLanguagesCb.SetValue(cfg.get("detectLatinSubLanguages", True))
 
 		self.tactileMarkerOptions = [
 			# Translators: Option for no tactile indicator at language transitions
@@ -437,6 +449,7 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		cfg["autoSyncInputTable"] = self.autoSyncInputCb.GetValue()
 		cfg["honorDocumentLang"] = self.honorDocLangCb.GetValue()
 		cfg["grade2BoundaryGuard"] = self.grade2GuardCb.GetValue()
+		cfg["detectLatinSubLanguages"] = self.detectLatinSubLanguagesCb.GetValue()
 		marker_sel = self.tactileMarkerChoice.GetSelection()
 		if 0 <= marker_sel < len(self.tactileMarkerOptions):
 			cfg["tactileMarker"] = self.tactileMarkerOptions[marker_sel][0]

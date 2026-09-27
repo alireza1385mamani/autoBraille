@@ -21,6 +21,7 @@ TEST_FILES = [
     "tests/test_intra_script.py",
     "tests/test_grade2_boundary.py",
     "tests/test_auto_detect_keyboards.py",
+    "tests/test_latin_sub_languages.py",
 ]
 
 
@@ -62,18 +63,19 @@ def run_all_tests() -> int:
     print()
 
     # 2. Run test suites in isolated subprocesses
-    print("2. Running 7 test suites in isolated processes...")
+    total_suites = len(TEST_FILES)
+    print(f"2. Running {total_suites} test suites in isolated processes...")
     failed = []
     total_start = time.perf_counter()
 
     for idx, test_rel in enumerate(TEST_FILES, start=1):
         test_path = os.path.join(repo_dir, test_rel)
         if not os.path.isfile(test_path):
-            print(f"[{idx}/7] MISSING: {test_rel}", file=sys.stderr)
+            print(f"[{idx}/{total_suites}] MISSING: {test_rel}", file=sys.stderr)
             failed.append(test_rel)
             continue
 
-        print(f"\n[{idx}/7] Running {test_rel}...")
+        print(f"\n[{idx}/{total_suites}] Running {test_rel}...")
         t_start = time.perf_counter()
         res = subprocess.run([python_exe, "-W", "default", test_path], cwd=repo_dir)
         elapsed = time.perf_counter() - t_start
@@ -87,13 +89,13 @@ def run_all_tests() -> int:
     total_elapsed = time.perf_counter() - total_start
     print("\n" + "=" * 65)
     if failed:
-        print(f"TEST RUN FAILED: {len(failed)} of {len(TEST_FILES)} suites failed in {total_elapsed:.2f}s:")
+        print(f"TEST RUN FAILED: {len(failed)} of {total_suites} suites failed in {total_elapsed:.2f}s:")
         for f in failed:
             print(f"  - {f}")
         print("=" * 65)
         return 1
     else:
-        print(f"ALL 7 TEST SUITES PASSED 100% on Python {sys.version.split()[0]} ({total_elapsed:.2f}s)!")
+        print(f"ALL {total_suites} TEST SUITES PASSED 100% on Python {sys.version.split()[0]} ({total_elapsed:.2f}s)!")
         print("=" * 65)
         return 0
 
