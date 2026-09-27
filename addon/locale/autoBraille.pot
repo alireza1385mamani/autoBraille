@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: autoBraille 1.0.6\n"
 "Report-Msgid-Bugs-To: https://github.com/alireza1385mamani/autoBraille/issues\n"
-"POT-Creation-Date: 2026-09-26 13:35+0000\n"
+"POT-Creation-Date: 2026-09-27 12:41+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,159 +30,247 @@ msgstr ""
 #. Translators: Title of the Auto Braille settings panel
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
 #. Translators: Title of message box dialogs
-#: addon/globalPlugins/autoBraille/__init__.py:95
-#: addon/globalPlugins/autoBraille/__init__.py:508
-#: addon/globalPlugins/autoBraille/__init__.py:638
-#: addon/globalPlugins/autoBraille/__init__.py:654
-#: addon/globalPlugins/autoBraille/__init__.py:663
-#: addon/globalPlugins/autoBraille/__init__.py:356
+#: addon/globalPlugins/autoBraille/__init__.py:107
+#: addon/globalPlugins/autoBraille/__init__.py:628
+#: addon/globalPlugins/autoBraille/__init__.py:838
+#: addon/globalPlugins/autoBraille/__init__.py:857
+#: addon/globalPlugins/autoBraille/__init__.py:866
+#: addon/globalPlugins/autoBraille/__init__.py:914
+#: addon/globalPlugins/autoBraille/__init__.py:971
+#: addon/globalPlugins/autoBraille/__init__.py:996
+#: addon/globalPlugins/autoBraille/__init__.py:437
 msgid "Auto Braille"
 msgstr ""
 
 #. Translators: Label for tactile indicator dropdown selection
-#: addon/globalPlugins/autoBraille/__init__.py:160
+#: addon/globalPlugins/autoBraille/__init__.py:192
 msgid "&Tactile indicator for language boundaries:"
 msgstr ""
 
+#. Translators: Label for hardware status cell language indicator selection
+#: addon/globalPlugins/autoBraille/__init__.py:215
+msgid "Hardware &status cell language indicator:"
+msgstr ""
+
 #. Translators: Label for primary output braille table selection
-#: addon/globalPlugins/autoBraille/__init__.py:180
+#: addon/globalPlugins/autoBraille/__init__.py:235
 msgid "&Primary output braille table:"
 msgstr ""
 
+#. Translators: Label for Math braille table selection
+#: addon/globalPlugins/autoBraille/__init__.py:256
+msgid "&Math braille table:"
+msgstr ""
+
 #. Translators: Label for primary Perkins braille input table selection
-#: addon/globalPlugins/autoBraille/__init__.py:199
+#: addon/globalPlugins/autoBraille/__init__.py:274
 msgid "Primary Perkins &input braille table:"
 msgstr ""
 
 #. Translators: Title of the auto-detect keyboards message box
 #. Translators: Title of the Auto-Detect Windows Keyboards setup wizard dialog
-#: addon/globalPlugins/autoBraille/__init__.py:398
+#: addon/globalPlugins/autoBraille/__init__.py:479
 #: addon/globalPlugins/autoBraille/language_dialogs.py:247
 msgid "Auto-Detect Windows Keyboards"
 msgstr ""
 
 #. Translators: Message shown when no new keyboard languages are detected in Windows
-#: addon/globalPlugins/autoBraille/__init__.py:400
+#: addon/globalPlugins/autoBraille/__init__.py:481
 msgid "No new Windows keyboard languages detected. All installed keyboard layouts are already configured or match your primary language."
 msgstr ""
 
-#. Translators: Announcement when Auto Braille translation is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:645
+#. Translators: Announcement when Auto Braille translation is enabled
+#: addon/globalPlugins/autoBraille/__init__.py:845
 msgid "Auto Braille enabled"
 msgstr ""
 
 #. Translators: Announcement when Auto Braille translation is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:645
+#: addon/globalPlugins/autoBraille/__init__.py:848
 msgid "Auto Braille disabled"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:637
+#: addon/globalPlugins/autoBraille/__init__.py:837
 msgid "Toggles automatic universal multi-script braille translation on and off"
 msgstr ""
 
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:653
+#: addon/globalPlugins/autoBraille/__init__.py:856
 msgid "Cycles or toggles Perkins braille keyboard input language"
 msgstr ""
 
+#. Translators: Spoken and braille message when secondary braille table is cycled
+#: addon/globalPlugins/autoBraille/__init__.py:900
+msgid "Secondary braille table: %s (%s)"
+msgstr ""
+
 #. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
-#: addon/globalPlugins/autoBraille/__init__.py:662
+#: addon/globalPlugins/autoBraille/__init__.py:865
+msgid "Cycles through active secondary braille tables"
+msgstr ""
+
+#. Translators: Spoken and braille message when primary braille table is cycled
+#: addon/globalPlugins/autoBraille/__init__.py:957
+msgid "Primary braille table: %s (%s)"
+msgstr ""
+
+#. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
+#: addon/globalPlugins/autoBraille/__init__.py:913
+msgid "Cycles primary braille table between configured languages"
+msgstr ""
+
+#. Translators: Announcement when Math formula detection is enabled
+#: addon/globalPlugins/autoBraille/__init__.py:979
+msgid "Math auto-detection enabled"
+msgstr ""
+
+#. Translators: Announcement when Math formula detection is disabled
+#: addon/globalPlugins/autoBraille/__init__.py:982
+msgid "Math auto-detection disabled"
+msgstr ""
+
+#. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
+#: addon/globalPlugins/autoBraille/__init__.py:970
+msgid "Toggles automatic Math and STEM formula detection on and off"
+msgstr ""
+
+#. Translators: Category name for Auto Braille gesture commands in NVDA Input Gestures
+#: addon/globalPlugins/autoBraille/__init__.py:995
 msgid "Announces the language and braille table at the caret or review cursor"
 msgstr ""
 
 #. Translators: Option for no tactile indicator at language transitions
-#: addon/globalPlugins/autoBraille/__init__.py:150
+#: addon/globalPlugins/autoBraille/__init__.py:182
 msgid "None"
 msgstr ""
 
 #. Translators: Option to raise Dot 8 under first cell of language change
-#: addon/globalPlugins/autoBraille/__init__.py:152
+#: addon/globalPlugins/autoBraille/__init__.py:184
 msgid "Dot 8 under first cell of language change"
 msgstr ""
 
 #. Translators: Option to raise Dot 7 under first cell of language change
-#: addon/globalPlugins/autoBraille/__init__.py:154
+#: addon/globalPlugins/autoBraille/__init__.py:186
 msgid "Dot 7 under first cell of language change"
 msgstr ""
 
 #. Translators: Option to underline secondary language cells with Dots 7 and 8
-#: addon/globalPlugins/autoBraille/__init__.py:156
+#: addon/globalPlugins/autoBraille/__init__.py:188
 msgid "Dots 7 and 8 underline under secondary language cells"
 msgstr ""
 
+#. Translators: Option to disable language indicator in hardware status cells
+#: addon/globalPlugins/autoBraille/__init__.py:207
+msgid "Disabled"
+msgstr ""
+
+#. Translators: Option to show active language at cursor in status cells
+#: addon/globalPlugins/autoBraille/__init__.py:209
+msgid "Current language at cursor"
+msgstr ""
+
+#. Translators: Option to show primary braille language in status cells
+#: addon/globalPlugins/autoBraille/__init__.py:211
+msgid "Primary braille language"
+msgstr ""
+
 #. Translators: Option to automatically use active NVDA output braille table
-#: addon/globalPlugins/autoBraille/__init__.py:175
+#: addon/globalPlugins/autoBraille/__init__.py:230
 msgid "Automatic (Use active NVDA output table)"
 msgstr ""
 
 #. Translators: Option to automatically follow active NVDA input braille table
-#: addon/globalPlugins/autoBraille/__init__.py:194
+#: addon/globalPlugins/autoBraille/__init__.py:269
 msgid "Automatic (Follow active NVDA input table)"
 msgstr ""
 
 #. Translators: Button to add a new secondary braille table
-#: addon/globalPlugins/autoBraille/__init__.py:266
+#: addon/globalPlugins/autoBraille/__init__.py:342
 msgid "&Add Table..."
 msgstr ""
 
 #. Translators: Button to configure the selected secondary braille table
-#: addon/globalPlugins/autoBraille/__init__.py:271
+#: addon/globalPlugins/autoBraille/__init__.py:347
 msgid "&Configure Table..."
 msgstr ""
 
 #. Translators: Button to remove the selected secondary braille table
-#: addon/globalPlugins/autoBraille/__init__.py:276
+#: addon/globalPlugins/autoBraille/__init__.py:352
 msgid "&Remove Table"
 msgstr ""
 
 #. Translators: Button to auto-detect installed Windows keyboard languages and configure matching braille tables
-#: addon/globalPlugins/autoBraille/__init__.py:281
+#: addon/globalPlugins/autoBraille/__init__.py:357
 msgid "&Auto-Detect Keyboards..."
 msgstr ""
 
+#. Translators: Button to open Custom Braille Dictionary dialog
+#: addon/globalPlugins/autoBraille/__init__.py:362
+msgid "&Custom Dictionary..."
+msgstr ""
+
 #. Translators: Title of message box dialogs
-#: addon/globalPlugins/autoBraille/__init__.py:355
+#: addon/globalPlugins/autoBraille/__init__.py:436
 msgid "Please select a braille table from the list to configure."
 msgstr ""
 
+#. Translators: Spoken feedback when only one secondary table is configured
+#: addon/globalPlugins/autoBraille/__init__.py:877
+msgid "Only one secondary table configured."
+msgstr ""
+
+#. Translators: Spoken feedback when no tables are available to cycle
+#: addon/globalPlugins/autoBraille/__init__.py:926
+msgid "No secondary tables available to cycle."
+msgstr ""
+
 #. Translators: Spoken and braille announcement for character and writing system at caret (first %s is character, second %s is language name, third %s is braille table)
-#: addon/globalPlugins/autoBraille/__init__.py:743
+#: addon/globalPlugins/autoBraille/__init__.py:1076
 msgid "%s: %s (%s)"
 msgstr ""
 
 #. Translators: Spoken and braille announcement for language at caret when on whitespace (first %s is language name, second %s is braille table)
-#: addon/globalPlugins/autoBraille/__init__.py:746
+#: addon/globalPlugins/autoBraille/__init__.py:1079
 msgid "%s (%s)"
 msgstr ""
 
 #. Translators: Checkbox label to enable or disable automatic multi-language braille output translation
-#: addon/globalPlugins/autoBraille/__init__.py:116
+#: addon/globalPlugins/autoBraille/__init__.py:128
 msgid "Enable &automatic multi-language braille output translation"
 msgstr ""
 
 #. Translators: Checkbox label to automatically synchronize Perkins braille keyboard input with active Windows layout
-#: addon/globalPlugins/autoBraille/__init__.py:125
+#: addon/globalPlugins/autoBraille/__init__.py:137
 msgid "Automatically &sync Perkins braille input with active Windows keyboard layout"
 msgstr ""
 
 #. Translators: Checkbox label to honor document language tags in web and office documents
-#: addon/globalPlugins/autoBraille/__init__.py:134
+#: addon/globalPlugins/autoBraille/__init__.py:146
 msgid "Honor &document language tags in web and office documents (e.g. HTML, Word)"
 msgstr ""
 
 #. Translators: Checkbox label to enable Grade 2 contracted braille boundary guarding
-#: addon/globalPlugins/autoBraille/__init__.py:143
+#: addon/globalPlugins/autoBraille/__init__.py:155
 msgid "&Protect isolated letters and code identifiers in Contracted Braille (Grade 2)"
 msgstr ""
 
+#. Translators: Checkbox label to automatically detect European language diacritics in Latin text
+#: addon/globalPlugins/autoBraille/__init__.py:164
+msgid "Automatically detect &European language diacritics in Latin text (e.g. German, French, Spanish, Turkish)"
+msgstr ""
+
+#. Translators: Checkbox label to automatically detect Math and STEM formulas
+#: addon/globalPlugins/autoBraille/__init__.py:175
+msgid "Automatically detect &Math and STEM formulas (e.g. LaTeX, equations)"
+msgstr ""
+
 #. Translators: Section heading for the active secondary braille tables list
-#: addon/globalPlugins/autoBraille/__init__.py:216
+#: addon/globalPlugins/autoBraille/__init__.py:291
 msgid "&Active Secondary Braille Tables (Auto-Detected):"
 msgstr ""
 
 #. Translators: Spoken feedback when tables are added via the auto-detect wizard
-#: addon/globalPlugins/autoBraille/__init__.py:429
+#: addon/globalPlugins/autoBraille/__init__.py:510
 msgid "Added %d braille tables from Windows keyboards."
 msgstr ""
 
@@ -214,6 +302,36 @@ msgstr ""
 msgid "&Detected keyboard languages:"
 msgstr ""
 
+#. Translators: Title of the Edit Custom Dictionary Entry dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:374
+msgid "Edit Custom Dictionary Entry"
+msgstr ""
+
+#. Translators: Title of the Edit Custom Dictionary Entry dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:374
+msgid "Add Custom Dictionary Entry"
+msgstr ""
+
+#. Translators: Label for pattern or word text control in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:386
+msgid "&Word or phrase to match:"
+msgstr ""
+
+#. Translators: Label for target braille table choice in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:391
+msgid "&Braille table:"
+msgstr ""
+
+#. Translators: Indicator that entry matching is case sensitive
+#: addon/globalPlugins/autoBraille/language_dialogs.py:485
+msgid "case-sensitive"
+msgstr ""
+
+#. Translators: Indicator that entry matching is case sensitive
+#: addon/globalPlugins/autoBraille/language_dialogs.py:485
+msgid "case-insensitive"
+msgstr ""
+
 #. Translators: Title of the Add Table dialog
 #: addon/globalPlugins/autoBraille/language_dialogs.py:81
 msgid "Add Secondary Braille Table"
@@ -229,9 +347,39 @@ msgstr ""
 msgid "&Edit Table..."
 msgstr ""
 
+#. Translators: Title of the Custom Lexicon / Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:430
+msgid "Custom Braille Dictionary"
+msgstr ""
+
+#. Translators: Description in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:442
+msgid "Define custom words or phrases that should always be translated with a specific braille table:"
+msgstr ""
+
+#. Translators: Button to add a new custom dictionary entry
+#: addon/globalPlugins/autoBraille/language_dialogs.py:455
+msgid "&Add..."
+msgstr ""
+
+#. Translators: Button to edit the selected custom dictionary entry
+#: addon/globalPlugins/autoBraille/language_dialogs.py:460
+msgid "&Edit..."
+msgstr ""
+
+#. Translators: Button to remove the selected custom dictionary entry
+#: addon/globalPlugins/autoBraille/language_dialogs.py:465
+msgid "&Remove"
+msgstr ""
+
 #. Translators: Title of the Edit Table dialog
 #: addon/globalPlugins/autoBraille/language_dialogs.py:176
 msgid "Configure Braille Table — %s"
+msgstr ""
+
+#. Translators: Checkbox label for case sensitivity in Custom Dictionary dialog
+#: addon/globalPlugins/autoBraille/language_dialogs.py:402
+msgid "&Case sensitive"
 msgstr ""
 
 #. Translators: Note shown in wizard when some detected keyboards have no matching Liblouis table in NVDA
@@ -248,132 +396,3 @@ msgstr ""
 #: addon/globalPlugins/autoBraille/input_sync.py:525
 msgid "Braille input: %s"
 msgstr ""
-
-#. Translators: Checkbox label to automatically detect European language diacritics in Latin text
-#: addon/globalPlugins/autoBraille/__init__.py:150
-msgid "Automatically detect &European language diacritics in Latin text (e.g. German, French, Spanish, Turkish)"
-msgstr ""
-
-#. Translators: Checkbox label to automatically detect Math and STEM formulas
-#: addon/globalPlugins/autoBraille/__init__.py:171
-msgid "Automatically detect &Math and STEM formulas (e.g. LaTeX, equations)"
-msgstr ""
-
-#. Translators: Label for Math braille table selection
-#: addon/globalPlugins/autoBraille/__init__.py:221
-msgid "&Math braille table:"
-msgstr ""
-
-#. Translators: Label for hardware status cell language indicator selection
-#: addon/globalPlugins/autoBraille/__init__.py:204
-msgid "Hardware &status cell language indicator:"
-msgstr ""
-
-#. Translators: Option to disable language indicator in hardware status cells
-#: addon/globalPlugins/autoBraille/__init__.py:196
-msgid "Disabled"
-msgstr ""
-
-#. Translators: Option to show active language at cursor in status cells
-#: addon/globalPlugins/autoBraille/__init__.py:198
-msgid "Current language at cursor"
-msgstr ""
-
-#. Translators: Option to show primary braille language in status cells
-#: addon/globalPlugins/autoBraille/__init__.py:200
-msgid "Primary braille language"
-msgstr ""
-
-#. Translators: Button to open Custom Braille Dictionary dialog
-#: addon/globalPlugins/autoBraille/__init__.py:360
-msgid "&Custom Dictionary..."
-msgstr ""
-
-#. Translators: Title of the Custom Lexicon / Dictionary dialog
-#: addon/globalPlugins/autoBraille/language_dialogs.py:417
-msgid "Custom Braille Dictionary"
-msgstr ""
-
-#. Translators: Title of the Edit Custom Dictionary Entry dialog
-#: addon/globalPlugins/autoBraille/language_dialogs.py:374
-msgid "Edit Custom Dictionary Entry"
-msgstr ""
-
-#: addon/globalPlugins/autoBraille/language_dialogs.py:374
-msgid "Add Custom Dictionary Entry"
-msgstr ""
-
-#. Translators: Label for pattern or word text control in Custom Dictionary dialog
-#: addon/globalPlugins/autoBraille/language_dialogs.py:387
-msgid "&Word or phrase to match:"
-msgstr ""
-
-#. Translators: Label for target braille table choice in Custom Dictionary dialog
-#: addon/globalPlugins/autoBraille/language_dialogs.py:392
-msgid "&Braille table:"
-msgstr ""
-
-#. Translators: Checkbox label for case sensitivity in Custom Dictionary dialog
-#: addon/globalPlugins/autoBraille/language_dialogs.py:404
-msgid "&Case sensitive"
-msgstr ""
-
-#. Translators: Description in Custom Dictionary dialog
-#: addon/globalPlugins/autoBraille/language_dialogs.py:428
-msgid "Define custom words or phrases that should always be translated with a specific braille table:"
-msgstr ""
-
-#. Translators: Indicator that entry matching is case sensitive
-#: addon/globalPlugins/autoBraille/language_dialogs.py:488
-msgid "case-sensitive"
-msgstr ""
-
-#: addon/globalPlugins/autoBraille/language_dialogs.py:488
-msgid "case-insensitive"
-msgstr ""
-
-#. Translators: Description for gesture script that cycles through secondary braille tables
-#: addon/globalPlugins/autoBraille/__init__.py:825
-msgid "Cycles through active secondary braille tables"
-msgstr ""
-
-#. Translators: Spoken feedback when only one secondary table is configured
-#: addon/globalPlugins/autoBraille/__init__.py:836
-msgid "Only one secondary table configured."
-msgstr ""
-
-#. Translators: Spoken and braille message when secondary braille table is cycled
-#: addon/globalPlugins/autoBraille/__init__.py:860
-msgid "Secondary braille table: %s (%s)"
-msgstr ""
-
-#. Translators: Description for gesture script that cycles primary braille tables
-#: addon/globalPlugins/autoBraille/__init__.py:873
-msgid "Cycles primary braille table between configured languages"
-msgstr ""
-
-#. Translators: Spoken feedback when no tables are available to cycle
-#: addon/globalPlugins/autoBraille/__init__.py:887
-msgid "No secondary tables available to cycle."
-msgstr ""
-
-#. Translators: Spoken and braille message when primary braille table is cycled
-#: addon/globalPlugins/autoBraille/__init__.py:917
-msgid "Primary braille table: %s (%s)"
-msgstr ""
-
-#. Translators: Description for gesture script that toggles Math formula auto-detection
-#: addon/globalPlugins/autoBraille/__init__.py:930
-msgid "Toggles automatic Math and STEM formula detection on and off"
-msgstr ""
-
-#. Translators: Announcement when Math formula detection is enabled
-#: addon/globalPlugins/autoBraille/__init__.py:938
-msgid "Math auto-detection enabled"
-msgstr ""
-
-#. Translators: Announcement when Math formula detection is disabled
-#: addon/globalPlugins/autoBraille/__init__.py:938
-msgid "Math auto-detection disabled"
-msgstr ""
-

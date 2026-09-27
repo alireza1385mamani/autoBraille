@@ -1498,8 +1498,9 @@ MATH_CANDIDATE_PATTERN: re.Pattern[str] = re.compile(
 )
 
 # Explicit LaTeX math delimiters: $$...$$, \[...\], \(...\), and $...$
+# Single $ must NOT be followed by whitespace or currency amounts, and must NOT be preceded by whitespace
 LATEX_MATH_PATTERN: re.Pattern[str] = re.compile(
-	r"(?:\$\$(.+?)\$\$|\\\[(.+?)\\\]|\\\((.+?)\\\)|\$(?!\d+(?:\s|$|[,\.]))([^$\n]+?)\$)",
+	r"(?:\$\$(.+?)\$\$|\\\[(.+?)\\\]|\\\((.+?)\\\)|\$(?!\s)(?!\d+(?:[,\.]\d+)?(?:\s|$|[,\.]))([^$\n]+?)(?<!\s)\$)",
 	re.DOTALL,
 )
 
@@ -1507,6 +1508,50 @@ LATEX_MATH_PATTERN: re.Pattern[str] = re.compile(
 PLAIN_MATH_PATTERN: re.Pattern[str] = re.compile(
 	r"(?:\b[fgh]\([a-zA-Z\d\s,]+\)\s*=\s*[^,;\n]+|\b[a-zA-Z\d\(\)]+(?:\s*[\+\-\*\/\^]\s*[a-zA-Z\d\(\)]+)*\s*(?:<=|>=|==|!=|[=<>≤≥≈≠±])\s*[a-zA-Z\d\(\)]+(?:\s*[\+\-\*\/\^]\s*[a-zA-Z\d\(\)]+)*)"
 )
+
+
+def is_false_positive_math(matched: str, s: int, e: int, full_text: str) -> bool:
+	"""Identify and reject false-positive math matches like HTML/XML tags, emails, and CLI options."""
+	# 1. HTML/XML tag or angle-bracketed email/URL false positives (e.g. '<p>', '<user@domain>')
+	if "<" in matched:
+		lt_pos = full_text.rfind("<", s, e)
+		if lt_pos != -1:
+			gt_pos = full_text.find(">", lt_pos)
+			if gt_pos != -1 and gt_pos < e + 60:
+				inner = full_text[lt_pos : gt_pos + 1]
+				if (
+					re.match(r"^<[a-zA-Z0-9_\.\-]+@[a-zA-Z0-9_\.\-]+>$", inner)
+					or re.match(r"^</?[a-zA-Z][a-zA-Z0-9_\-:]*(?:\s+[^>]*)?/?>$", inner)
+					or re.match(r"^<https?://[^>]+>$", inner)
+				):
+					return True
+		# If '<' is immediately followed by letters and not spaced in a mathematical comparison
+		if re.search(r"<[a-zA-Z]", matched) and not re.search(r"\b[a-zA-Z\d]\s+<\s+[a-zA-Z\d]", matched):
+			return True
+
+	# 2. Angle bracket closing '>' check: e.g. 'com> today' from '<user@example.com> today'
+	if ">" in matched:
+		gt_pos = full_text.find(">", s, e)
+		if gt_pos != -1:
+			lt_pos = full_text.rfind("<", 0, gt_pos)
+			if lt_pos != -1:
+				inner = full_text[lt_pos : gt_pos + 1]
+				if (
+					re.match(r"^<[a-zA-Z0-9_\.\-]+@[a-zA-Z0-9_\.\-]+>$", inner)
+					or re.match(r"^</?[a-zA-Z][a-zA-Z0-9_\-:]*(?:\s+[^>]*)?/?>$", inner)
+					or re.match(r"^<https?://[^>]+>$", inner)
+				):
+					return True
+		# If '>' is preceded by letters without space and not in a spaced math comparison
+		if re.search(r"[a-zA-Z]>", matched) and not re.search(r"\b[a-zA-Z\d]\s+>\s+[a-zA-Z\d]", matched):
+			return True
+
+	# 3. Assignment / CLI key=value false positives (e.g. 'key=value', '--option=val')
+	if "=" in matched and not any(op in matched for op in ("+", "-", "*", "/", "^", "≤", "≥", "≈", "≠", "±", "(", ")")):
+		if re.match(r"^[a-zA-Z0-9_\-]+=[a-zA-Z0-9_\-]+$", matched):
+			return True
+
+	return False
 
 
 def has_math_candidate(text: str) -> bool:
@@ -1535,7 +1580,7 @@ def find_math_spans(text: str) -> List[Tuple[int, int, str]]:
 		s, e = m.start(), m.end()
 		matched = m.group(0)
 		# Validate that single-$ is not currency ($50 or $10.99)
-		if matched.startswith("$") and not matched.startswith("$$") and re.match(r"^\$\d+(?:\.\d+)?\$$", matched):
+		if matched.startswith("$") and not matched.startswith("$$") and re.match(r"^\$\d+(?:[,\.]\d+)?\$$", matched):
 			continue
 		spans.append((s, e, matched))
 		for i in range(s, e):
@@ -1552,7 +1597,7 @@ def find_math_spans(text: str) -> List[Tuple[int, int, str]]:
 		while e > s and matched and matched[-1] in ".,;:!?":
 			e -= 1
 			matched = matched[:-1]
-		if len(matched) >= 3:
+		if len(matched) >= 3 and not is_false_positive_math(matched, s, e, text):
 			spans.append((s, e, matched))
 			for i in range(s, e):
 				occupied[i] = True
@@ -1573,7 +1618,15 @@ def parse_custom_dictionary(raw_data: str) -> List[Dict[str, Any]]:
 	try:
 		entries = json.loads(raw_data)
 		if isinstance(entries, list):
-			return [e for e in entries if isinstance(e, dict) and "pattern" in e and "table" in e]
+			return [
+				e
+				for e in entries
+				if isinstance(e, dict)
+				and isinstance(e.get("pattern"), str)
+				and e["pattern"].strip()
+				and isinstance(e.get("table"), str)
+				and e["table"].strip()
+			]
 	except Exception:
 		pass
 	return []

@@ -410,9 +410,11 @@ def segment_text(
 	# 1. Custom lexicon / dictionary overrides (highest priority)
 	if custom_dictionary:
 		for entry in custom_dictionary:
-			pat = entry.get("pattern", "")
-			tbl = entry.get("table", "")
-			if not pat or not tbl:
+			if not isinstance(entry, dict):
+				continue
+			pat = entry.get("pattern")
+			tbl = entry.get("table")
+			if not isinstance(pat, str) or not isinstance(tbl, str) or not pat.strip() or not tbl.strip():
 				continue
 			cs = entry.get("case_sensitive", False)
 			flags = 0 if cs else re.IGNORECASE

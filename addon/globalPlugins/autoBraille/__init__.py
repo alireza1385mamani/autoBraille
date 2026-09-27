@@ -507,7 +507,6 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 						added_count += 1
 				self.refreshTablesList(select_idx=len(self.active_items) - 1)
 				# Translators: Spoken feedback when tables are added via the auto-detect wizard
-				# Translators: Spoken feedback when tables are added via the auto-detect wizard
 				ui.message(_("Added %d braille tables from Windows keyboards.") % added_count)
 		dlg.Destroy()
 
@@ -593,12 +592,23 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 			braille.handler.handleGainFocus(api.getFocusObject())
 
 		# Apply status cells immediately
-		plugin = globalPluginHandler.runningPlugins.get(GlobalPlugin) if hasattr(globalPluginHandler, "runningPlugins") else None
+		global _running_plugin
+		plugin = _running_plugin
+		if not plugin and hasattr(globalPluginHandler, "runningPlugins"):
+			rps = globalPluginHandler.runningPlugins
+			if isinstance(rps, dict):
+				plugin = rps.get(GlobalPlugin)
+			elif isinstance(rps, (list, tuple, set)):
+				for p in rps:
+					if isinstance(p, GlobalPlugin):
+						plugin = p
+						break
 		if plugin and hasattr(plugin, "apply_status_cells"):
 			plugin.apply_status_cells(update_display=True)
 
 
 _orig_braille_input: Optional[Callable[..., Any]] = None
+_running_plugin: Optional[GlobalPlugin] = None
 
 
 def _hooked_braille_input(handler_self: Any, dots: int, *args: Any, **kwargs: Any) -> Any:
@@ -619,7 +629,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def __init__(self) -> None:
 		super().__init__()
-		global _orig_braille_input
+		global _orig_braille_input, _running_plugin
+		_running_plugin = self
 
 		# Hook output translation safely
 		if louisHelper.translate != self._hooked_translate:
@@ -654,7 +665,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		log.info("Auto Braille loaded successfully with streamlined active languages manager")
 
 	def terminate(self) -> None:
-		global _orig_braille_input
+		global _orig_braille_input, _running_plugin
+		if _running_plugin is self:
+			_running_plugin = None
 
 		if hasattr(config, "post_configProfileSwitch"):
 			try:
@@ -773,12 +786,30 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				pass
 
 		tactile_marker = config.conf.get("autoBraille", {}).get("tactileMarker", "none")
+		cfg_ab = config.conf.get("autoBraille", {})
+		has_math = cfg_ab.get("detectMath", True) and scripts_data.has_math_candidate(inbuf)
+		active_latin = translator.get_active_latin_tables(tableList)
+		has_latin_sub = (
+			cfg_ab.get("detectLatinSubLanguages", True)
+			and len(active_latin) > 1
+			and scripts_data.has_non_ascii_latin(inbuf)
+		)
+		has_custom_dict = bool(cfg_ab.get("customDictionary", "").strip() not in ("", "[]"))
 
 		has_multiple_primary = len(translator.get_candidate_tables_for_script(primary_script, tableList)) > 1
 
-		# Fast check: If text contains no characters belonging to any enabled secondary script, no doc spans, no multiple primary tables, and no tactile markers
-		if not has_multiple_primary and not doc_spans and tactile_marker == "none" and not segmenter.has_secondary_scripts(inbuf, secondary_scripts):
-			primary_tbl = config.conf.get("autoBraille", {}).get("primaryTable", "auto")
+		# Fast check: If text contains no characters belonging to any enabled secondary script, no doc spans, no multiple primary tables, no tactile markers, no math candidate, no latin sub-language diacritics, and no custom dictionary
+		if (
+			not has_multiple_primary
+			and not doc_spans
+			and tactile_marker == "none"
+			and not has_math
+			and not has_latin_sub
+			and not has_custom_dict
+			and not segmenter.has_secondary_scripts(inbuf, secondary_scripts)
+		):
+			self.apply_status_cells(update_display=False)
+			primary_tbl = cfg_ab.get("primaryTable", "auto")
 			if primary_tbl and primary_tbl != "auto":
 				chain = translator.get_table_chain_for_file(primary_tbl)
 				return self._orig_translate(chain, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
@@ -809,9 +840,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_toggleAutoBraille(self, gesture: Any) -> None:
 		new_val = not config.conf.get("autoBraille", {}).get("enabled", True)
 		config.conf["autoBraille"]["enabled"] = new_val
-		# Translators: Announcement when Auto Braille translation is enabled
-		# Translators: Announcement when Auto Braille translation is disabled
-		msg = _("Auto Braille enabled") if new_val else _("Auto Braille disabled")
+		if new_val:
+			# Translators: Announcement when Auto Braille translation is enabled
+			msg = _("Auto Braille enabled")
+		else:
+			# Translators: Announcement when Auto Braille translation is disabled
+			msg = _("Auto Braille disabled")
 		ui.message(msg)
 		if braille.handler and api.getFocusObject():
 			braille.handler.handleGainFocus(api.getFocusObject())
@@ -940,9 +974,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		cfg = config.conf.get("autoBraille", {})
 		new_val = not cfg.get("detectMath", True)
 		config.conf["autoBraille"]["detectMath"] = new_val
-		# Translators: Announcement when Math formula detection is enabled
-		# Translators: Announcement when Math formula detection is disabled
-		msg = _("Math auto-detection enabled") if new_val else _("Math auto-detection disabled")
+		if new_val:
+			# Translators: Announcement when Math formula detection is enabled
+			msg = _("Math auto-detection enabled")
+		else:
+			# Translators: Announcement when Math formula detection is disabled
+			msg = _("Math auto-detection disabled")
 		ui.message(msg)
 		if braille.handler:
 			try:

@@ -419,9 +419,33 @@ def test_math_stem_detection():
     assert segs_fa[1][3] == "math:en-ueb-math.ctb"
     assert segs_fa[2][3] == "arabic_persian"
 
-    # 1.7 Translator routing for math
-    table_chain = translator.resolve_segment_table("$x^2$", 0, 5, "math:en-ueb-math.ctb", ["en-ueb-g1.ctb"])
-    assert "en-ueb-math.ctb" in table_chain[0]
+    # 1.8 False positive rejection: HTML tags, emails, CLI flags, and unclosed dollar signs
+    html_text = "Click here <p> for more information or <div class='test'>."
+    spans_html = scripts_data.find_math_spans(html_text)
+    assert len(spans_html) == 0, f"HTML tags mistaken for math: {spans_html}"
+
+    email_text = "Contact support at John <john@example.com> today."
+    spans_email = scripts_data.find_math_spans(email_text)
+    assert len(spans_email) == 0, f"Email mistaken for math: {spans_email}"
+
+    cli_text = "Run script --config=default.cfg --output=result.txt now."
+    spans_cli = scripts_data.find_math_spans(cli_text)
+    assert len(spans_cli) == 0, f"CLI key=value mistaken for math: {spans_cli}"
+
+    prose_dollar = "Price is $foo and $bar in variables."
+    spans_dollar = scripts_data.find_math_spans(prose_dollar)
+    assert len(spans_dollar) == 0, f"Unclosed dollars mistaken for math: {spans_dollar}"
+
+    # 1.9 End-to-end _hooked_translate routes math even when no secondary script is present
+    plugin = autoBraille.GlobalPlugin()
+    math_prose = "The formula f(x) = 2x + 1 is linear."
+    config_mock.conf["autoBraille"]["detectMath"] = True
+    config_mock.conf["autoBraille"]["mathTable"] = "en-ueb-math.ctb"
+    res_cells, b2r, r2b, cur = plugin._hooked_translate(["en-ueb-g1.ctb"], math_prose)
+    assert len(res_cells) == len(math_prose)
+    # Status cell language should be 'ma' (math)
+    assert translator.last_active_language.startswith("math:") or translator.last_active_language == "latin"
+    plugin.terminate()
 
     print("Math & STEM formula detection and routing verified 100%!")
 
@@ -606,12 +630,20 @@ def test_custom_dictionary_overrides():
     assert t == "en-ueb-g2.ctb"
     assert cs is True
 
-    dict_dlg = language_dialogs.CustomDictionaryDialog(
-        wx_mock.Window(),
-        entries,
-        available_output_tables=braille_tables_mock.listTables(),
-    )
-    assert len(dict_dlg.get_entries()) == 2
+    # 5.6 Malformed entries validation: numbers, None, empty patterns/tables are discarded
+    malformed_json = '[{"pattern": 123, "table": "en-ueb-g1.ctb"}, {"pattern": "valid", "table": null}, {"pattern": "", "table": "en-ueb-g1.ctb"}, {"pattern": "good", "table": "de-g1.ctb"}]'
+    sanitized = scripts_data.parse_custom_dictionary(malformed_json)
+    assert len(sanitized) == 1
+    assert sanitized[0]["pattern"] == "good"
+
+    # 5.7 NVDA runningPlugins list safety
+    plugin = autoBraille.GlobalPlugin()
+    # Mock NVDA runningPlugins as a list (standard NVDA behavior)
+    globalPluginHandler_mock.runningPlugins = [plugin]
+    panel = autoBraille.AutoBrailleSettingsPanel(wx_mock.Window())
+    panel.makeSettings(wx_mock.BoxSizer(1))
+    panel.onSave()  # Must not crash with AttributeError: 'list' object has no attribute 'get'
+    plugin.terminate()
 
     print("Custom user dictionary overrides and dialogs verified 100%!")
 

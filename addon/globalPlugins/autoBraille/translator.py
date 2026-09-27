@@ -442,16 +442,17 @@ def multi_script_translate(
 		log.warning("Auto Braille segmentation failed; falling back to single table", exc_info=True)
 		return original_translate(active_tables, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
 
-	# Update last_active_language based on cursor position or first segment
-	if cursorPos is not None and segments:
-		active_lang = segments[0][3]
-		for _, s_start, s_end, s_tag in segments:
-			if s_start <= cursorPos <= s_end:
-				active_lang = s_tag
-				break
-		last_active_language = active_lang
-	elif segments:
-		last_active_language = segments[0][3]
+	# Update last_active_language based on cursor position or first/last segment
+	if segments:
+		if cursorPos is not None:
+			matched_lang = None
+			for _, s_start, s_end, s_tag in segments:
+				if s_start <= cursorPos <= s_end:
+					matched_lang = s_tag
+					break
+			last_active_language = matched_lang if matched_lang is not None else segments[-1][3]
+		else:
+			last_active_language = segments[0][3]
 	else:
 		last_active_language = primary_script
 
