@@ -1,7 +1,7 @@
 # Auto Braille for NVDA
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](LICENSE)
-[![NVDA Compatibility](https://img.shields.io/badge/NVDA-2024.1%20to%202026.3%2B-green.svg)](https://www.nvaccess.org/)
+[![NVDA Compatibility](https://img.shields.io/badge/NVDA-2024.1%20to%202026.2-green.svg)](https://www.nvaccess.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-lightgrey.svg)](https://microsoft.com)
 
 **Auto Braille** is a high-performance NVDA add-on that brings universal **in-line multi-script braille output translation** and **intelligent Perkins keyboard input auto-switching** to every refreshable braille display supported by NVDA.

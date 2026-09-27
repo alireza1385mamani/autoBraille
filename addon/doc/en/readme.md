@@ -2,7 +2,7 @@
 
 * **Author:** Alireza Mamani & Antigravity (<https://github.com/alireza1385mamani>)
 * **Repository:** <https://github.com/alireza1385mamani/autoBraille>
-* **NVDA Compatibility:** NVDA 2024.1 to 2026.3+
+* **NVDA Compatibility:** NVDA 2024.1 to 2026.2
 * **License:** GNU General Public License v2.0 (GPL-2.0)
 
 **Auto Braille** is an open-source NVDA global plugin that brings seamless multi-lingual braille output and intelligent Perkins keyboard input auto-switching to every refreshable braille display supported by NVDA.
