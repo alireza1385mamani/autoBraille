@@ -97,6 +97,17 @@ def get_table_chain_for_file(file_name: str) -> List[str]:
 def get_primary_table(active_tables: Optional[List[str]] = None) -> str:
 	"""Return the primary output table filename."""
 	cfg = config.conf.get("autoBraille", {})
+	raw_primaries = cfg.get("activePrimaryTables")
+	if raw_primaries:
+		if isinstance(raw_primaries, str):
+			first_prim = raw_primaries.split(",")[0].strip()
+		elif isinstance(raw_primaries, list) and raw_primaries:
+			first_prim = raw_primaries[0].strip()
+		else:
+			first_prim = ""
+		if first_prim and first_prim != "auto":
+			return first_prim
+
 	tbl = cfg.get("primaryTable", "auto")
 	if tbl and tbl != "auto":
 		return tbl
@@ -109,6 +120,30 @@ def get_primary_table(active_tables: Optional[List[str]] = None) -> str:
 	except Exception:
 		pass
 	return "en-ueb-g1.ctb"
+
+
+def get_active_primary_tables(active_tables: Optional[List[str]] = None) -> List[str]:
+	"""Return list of active primary braille table filenames."""
+	cfg = config.conf.get("autoBraille", {})
+	raw_tables = cfg.get("activePrimaryTables")
+	if raw_tables:
+		if isinstance(raw_tables, str):
+			items = [t.strip() for t in raw_tables.split(",") if t.strip()]
+		else:
+			items = list(raw_tables)
+		resolved: List[str] = []
+		for item in items:
+			if item == "auto":
+				p = get_primary_table(active_tables)
+				if p and p not in resolved:
+					resolved.append(p)
+			elif item and item not in resolved:
+				resolved.append(item)
+		if resolved:
+			return resolved
+
+	prim = get_primary_table(active_tables)
+	return [prim]
 
 
 def get_default_secondary_table(primary_tbl: Optional[str] = None) -> str:
@@ -167,6 +202,10 @@ def get_enabled_scripts(active_tables: Optional[List[str]] = None) -> Set[str]:
 	"""Return the set of currently enabled scripts from active tables."""
 	primary = get_primary_script(active_tables)
 	enabled: Set[str] = {primary}
+	for pt in get_active_primary_tables(active_tables):
+		s = scripts_data.resolve_table_to_script(pt)
+		if s:
+			enabled.add(s.id)
 
 	sec_tables = get_active_secondary_tables()
 	for tbl in sec_tables:
@@ -181,9 +220,15 @@ def get_candidate_tables_for_script(script_name: str, active_tables: Optional[Li
 	"""Get all active tables for a given script in priority order (primary first if matching)."""
 	primary_script = get_primary_script(active_tables)
 	candidates: List[str] = []
-	prim_tbl = get_primary_table(active_tables)
-	if script_name == primary_script and prim_tbl:
-		candidates.append(prim_tbl)
+	prim_tables = get_active_primary_tables(active_tables)
+	for pt in prim_tables:
+		s = scripts_data.resolve_table_to_script(pt)
+		if s and s.id == script_name and pt not in candidates:
+			candidates.append(pt)
+	if not candidates and script_name == primary_script:
+		prim_tbl = get_primary_table(active_tables)
+		if prim_tbl and prim_tbl not in candidates:
+			candidates.append(prim_tbl)
 
 	sec_tables = get_active_secondary_tables()
 	for tbl in sec_tables:
@@ -194,6 +239,7 @@ def get_candidate_tables_for_script(script_name: str, active_tables: Optional[Li
 	if not candidates:
 		info = scripts_data.get_script_info(script_name)
 		default_tbl = info.default_output_table if info else "en-ueb-g1.ctb"
+		prim_tbl = get_primary_table(active_tables)
 		if prim_tbl and scripts_data.is_contracted_table(prim_tbl):
 			g2_comp = scripts_data.get_grade2_companion_table(default_tbl)
 			if g2_comp:
@@ -204,11 +250,11 @@ def get_candidate_tables_for_script(script_name: str, active_tables: Optional[Li
 
 
 def get_active_latin_tables(active_tables: Optional[List[str]] = None) -> List[str]:
-	"""Return list of active Latin-script braille tables, with primary Latin table first."""
-	primary_tbl = get_primary_table(active_tables)
+	"""Return list of active Latin-script braille tables, with primary Latin tables first."""
 	latin_tables: List[str] = []
-	if scripts_data.is_latin_table(primary_tbl):
-		latin_tables.append(primary_tbl)
+	for pt in get_active_primary_tables(active_tables):
+		if scripts_data.is_latin_table(pt) and pt not in latin_tables:
+			latin_tables.append(pt)
 
 	sec_tables = get_active_secondary_tables()
 	all_candidates = list(sec_tables)
@@ -363,9 +409,15 @@ def resolve_segment_table(
 				doc_lang_code = scripts_data.normalize_doc_lang(lang)
 				primary_lang_code = scripts_data.get_table_lang_code(primary_tbl)
 
-				# 1. If document language corresponds to the primary language, use user-configured primary table
-				if doc_lang_code and primary_lang_code and doc_lang_code == primary_lang_code:
-					target_chain = get_table_chain_for_file(primary_tbl)
+				# 1. If document language corresponds to an active primary table, use that primary table
+				matched_primary = None
+				for pt in get_active_primary_tables(active_tables):
+					pt_lang_code = scripts_data.get_table_lang_code(pt)
+					if doc_lang_code and pt_lang_code and doc_lang_code == pt_lang_code:
+						matched_primary = pt
+						break
+				if matched_primary:
+					target_chain = get_table_chain_for_file(matched_primary)
 					break
 				elif not doc_lang_code and scripts_data.resolve_table_to_script(primary_tbl) and scripts_data.resolve_table_to_script(primary_tbl).id == script:
 					target_chain = get_table_chain_for_file(primary_tbl)
@@ -450,6 +502,8 @@ def multi_script_translate(
 
 	primary_chain = get_script_table_chain(primary_script, active_tables)
 	primary_table = get_primary_table(active_tables)
+	active_prim_tables = get_active_primary_tables(active_tables)
+	active_prim_chains = [get_table_chain_for_file(pt) for pt in active_prim_tables]
 	active_latin_tables = get_active_latin_tables(active_tables)
 
 	try:
@@ -503,7 +557,8 @@ def multi_script_translate(
 		table = resolve_segment_table(inbuf, start_idx, end_idx, seg_script, active_tables, doc_lang_spans, full_inbuf=inbuf)
 		try:
 			cells, b2r, r2b, cur = original_translate(table, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
-			if cells and (seg_script != primary_script or table != primary_chain):
+			is_secondary = (table not in active_prim_chains)
+			if cells and is_secondary:
 				if tactile_marker == "dot8_first":
 					cells = [cells[0] | BRAILLE_DOT_8] + cells[1:]
 				elif tactile_marker == "dot7_first":
@@ -561,7 +616,7 @@ def multi_script_translate(
 		# Apply tactile marker if configured
 		if cells:
 			is_lang_switch = (idx > 0 and (script != segments[idx - 1][3] or (prev_table is not None and table != prev_table)))
-			is_secondary = (script != primary_script or table != primary_chain)
+			is_secondary = (table not in active_prim_chains)
 			if tactile_marker == "dot8_first" and is_lang_switch:
 				cells = [cells[0] | BRAILLE_DOT_8] + cells[1:]
 			elif tactile_marker == "dot7_first" and is_lang_switch:

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2026-10-10
+
+### Added
+- **Active Primary Braille Tables Management**:
+  - Transformed the primary language configuration into a dedicated **Active Primary Braille Tables** list box matching the secondary language section.
+  - Added **Add Primary Table...** dialog to pair any output table with a Perkins braille input table.
+  - Added **Configure Primary Table...** dialog to adjust table pairings for existing entries (also triggered via `Enter` or double-click).
+  - Added **Remove Primary Table** button to delete extra primary tables (reverting to Automatic if the last item is removed).
+  - Added **Reset Primary to Automatic** button to instantly restore default NVDA-following behavior.
+  - Multi-primary intra-script switching: Supports multiple active primary tables (e.g. English UEB Grade 2 and Spanish Grade 1) with automatic intra-script disambiguation.
+  - Enhanced Perkins braille input keyboard synchronization: Matches active Windows keyboard layouts against all configured primary tables and their respective per-table input configurations.
+  - Full backward compatibility: Preserves existing single-table `primaryTable` and `primaryInputTable` configurations across legacy profiles while serializing `activePrimaryTables`.
+
 ## [1.0.7] - 2026-10-10
 
 ### Fixed

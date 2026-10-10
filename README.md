@@ -118,9 +118,13 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 |                                                                                 |
 | Tactile indicator for language boundaries: [Dot 8 under first cell...         v] |
 | Hardware status cell language indicator:   [Current language at cursor        v] |
-| Primary output braille table:              [Automatic (From NVDA settings)    v] |
 | Math braille table:                        [Unified English Braille - Math    v] |
-| Primary Perkins input braille table:       [Automatic (Match output table)    v] |
+|---------------------------------------------------------------------------------|
+| Active Primary Braille Tables:                                                  |
+| +-----------------------------------------------------------------------------+ |
+| | Automatic (Use active NVDA output table)  —  Input: Automatic (Follow active) | |
+| +-----------------------------------------------------------------------------+ |
+| [Add Primary Table...] [Configure Primary Table...] [Remove Primary] [Reset...] |
 |---------------------------------------------------------------------------------|
 | Active Secondary Braille Tables (Auto-Detected):                                |
 | +-----------------------------------------------------------------------------+ |
@@ -132,6 +136,12 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 | [&Add Table...] [&Configure Table...] [&Remove Table] [&Auto-Detect...] [&Custom Dictionary...] |
 +---------------------------------------------------------------------------------+
 ```
+
+### Managing Primary Braille Tables
+* **Automatic by Default:** Uses your active NVDA output braille table and Perkins input table.
+* **Multiple Primary Tables:** You can add multiple primary tables (e.g. English UEB Grade 2 and Spanish Grade 1) with individual Perkins input tables. Auto Braille automatically switches between them within the primary script.
+* **Configure & Remove:** Customize output and Perkins input pairing or remove extra primary tables.
+* **Reset to Automatic:** Instantly reset primary tables back to the active NVDA braille table.
 
 ### Adding a Secondary Table
 1. Click **Add Table...** or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages.

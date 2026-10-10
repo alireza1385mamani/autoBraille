@@ -76,9 +76,11 @@ class AddTableDialog(wx.Dialog):
 		available_output_tables: List[Any],
 		available_input_tables: List[Any],
 		primary_table_file: str = "auto",
+		title: Optional[str] = None,
 	) -> None:
 		# Translators: Title of the Add Table dialog
-		super().__init__(parent, title=_("Add Secondary Braille Table"))
+		dlg_title = title if title else _("Add Secondary Braille Table")
+		super().__init__(parent, title=dlg_title)
 
 		self.output_tables = sorted(available_output_tables, key=lambda t: t.displayName.lower())
 		self.input_tables = sorted(available_input_tables, key=lambda t: t.displayName.lower())
@@ -166,14 +168,19 @@ class EditTableDialog(wx.Dialog):
 			current_out_table = kwargs.get("current_out_table", "fa-ir-g1.utb")
 			current_inp_table = kwargs.get("current_inp_table", "fa-ir-g1.utb")
 
+		title_param = kwargs.get("title")
 		out_list = available_output_tables or []
 		inp_list = available_input_tables or []
 
 		table_names = {t.fileName: t.displayName for t in out_list}
-		name = table_names.get(current_out_table, current_out_table)
+		if current_out_table == "auto":
+			name = _("Automatic")
+		else:
+			name = table_names.get(current_out_table, current_out_table)
 
 		# Translators: Title of the Edit Table dialog
-		super().__init__(parent, title=_("Configure Braille Table — %s") % name)
+		dlg_title = title_param if title_param else (_("Configure Braille Table — %s") % name)
+		super().__init__(parent, title=dlg_title)
 
 		self.output_tables = sorted(out_list, key=lambda t: t.displayName.lower())
 		self.input_tables = sorted(inp_list, key=lambda t: t.displayName.lower())

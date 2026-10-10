@@ -93,9 +93,8 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 7. **Hardware status cell language indicator:** Configure tactile language indicators on displays with physical status cells (Disabled, 2-letter, 1-letter, or Primary/Secondary dots).
 8. **Custom Lexicon / Dictionary Overrides...:** Open the dictionary manager to add, edit, or remove word-specific braille routing rules.
 9. **Tactile indicator for language boundaries:** Choose between *None*, *Dot 8 under first cell*, *Dot 7 under first cell*, or *Dots 7 and 8 underline*.
-10. **Primary output braille table:** Select your default output table from all installed Liblouis tables, or choose *Automatic (Use active NVDA output table)*.
-11. **Primary Perkins input braille table:** Select your default input table, or choose *Automatic (Follow active NVDA input table)*.
-12. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages.
+10. **Active Primary Braille Tables:** View and manage your primary braille tables. Default is *Automatic (Use active NVDA output table)*. Click **Add Primary Table...** to configure multiple primary tables with dedicated Perkins input tables, **Configure Primary Table...** to edit, **Remove Primary Table** to remove, or **Reset Primary to Automatic** to restore default.
+11. **Active Secondary Braille Tables List:** Click **Add Table...** to activate any secondary braille table manually, or click **Auto-Detect Keyboards...** to instantly configure all installed Windows keyboard languages.
 
 ---
 

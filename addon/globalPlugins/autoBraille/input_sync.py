@@ -333,6 +333,7 @@ def _resolve_primary_input_table(primary_script: str, fallback_candidate: str) -
 def resolve_input_table_for_lang(lang_id: int) -> str:
 	"""Map a Windows LANGID to the appropriate configured braille input table."""
 	cfg = config.conf.get("autoBraille", {})
+	prim_tables = translator.get_active_primary_tables()
 	primary_tbl = translator.get_primary_table()
 	primary_script = translator.get_primary_script()
 	sec_tables = translator.get_active_secondary_tables()
@@ -344,10 +345,13 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 
 	if exact_tbl:
 		exact_code = scripts_data.get_table_lang_code(exact_tbl)
-		prim_code = scripts_data.get_table_lang_code(primary_tbl)
-		# If it matches primary table, return primary input table
-		if exact_tbl == primary_tbl or exact_code == prim_code:
-			return _resolve_primary_input_table(primary_script, exact_tbl)
+		# Check active primary tables first
+		for pt in prim_tables:
+			if pt == exact_tbl or scripts_data.get_table_lang_code(pt) == exact_code:
+				inp_tbl = cfg.get(f"inputTable_{pt}")
+				if inp_tbl and inp_tbl != "auto":
+					return resolve_concrete_table_name(inp_tbl, is_input=True)
+				return _resolve_primary_input_table(primary_script, pt)
 
 		# If it matches an active secondary table, use that table's input mapping
 		for tbl in sec_tables:
@@ -363,12 +367,17 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 		primary_lang = lang_id & 0x03FF
 		script_id = scripts_data.LANG_ID_TO_SCRIPT.get(primary_lang)
 
-	# If layout matches primary script or unknown, return Primary input table
-	if script_id == primary_script:
-		return _resolve_primary_input_table(primary_script, "en-ueb-g1.ctb")
-
-	# If layout matches a secondary script, check active secondary tables
 	if script_id:
+		# Check active primary tables first
+		for pt in prim_tables:
+			s_info = scripts_data.resolve_table_to_script(pt)
+			if s_info and s_info.id == script_id:
+				inp_tbl = cfg.get(f"inputTable_{pt}")
+				if inp_tbl and inp_tbl != "auto":
+					return resolve_concrete_table_name(inp_tbl, is_input=True)
+				return _resolve_primary_input_table(primary_script, pt)
+
+		# If layout matches a secondary script, check active secondary tables
 		for tbl in sec_tables:
 			s_info = scripts_data.resolve_table_to_script(tbl)
 			if s_info and s_info.id == script_id:

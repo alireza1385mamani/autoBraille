@@ -76,7 +76,7 @@ flowchart TD
 | **`segmenter.py`** | `addon/globalPlugins/autoBraille/segmenter.py` | High-speed regex segmenter with disjoint Unicode script intervals, atomic numeric literal preservation, and LRU caching for microsecond-level text partitioning. |
 | **`scripts_data.py`** | `addon/globalPlugins/autoBraille/scripts_data.py` | Universal registry for 24+ global writing systems, BCP-47 tag mappings, Liblouis table prefixes/keywords, and Windows LANGID lookups. |
 | **`input_sync.py`** | `addon/globalPlugins/autoBraille/input_sync.py` | Perkins braille keyboard auto-switching, 64-bit safe Win32 layout detection (`GetKeyboardLayout`), table resolution, and cyclic input switching. |
-| **`language_dialogs.py`** | `addon/globalPlugins/autoBraille/language_dialogs.py` | Accessible wxPython modal dialogs: `AddTableDialog` and `EditTableDialog` for configuring secondary tables. |
+| **`language_dialogs.py`** | `addon/globalPlugins/autoBraille/language_dialogs.py` | Accessible wxPython modal dialogs: `AddTableDialog` and `EditTableDialog` for configuring primary and secondary braille tables. |
 | **`generate_pot.py`** | `generate_pot.py` | Standalone AST extractor parsing all translatable `_()` strings and `# Translators:` comments into `addon/locale/autoBraille.pot`. |
 
 ---

@@ -57,6 +57,7 @@ confspec: Dict[str, str] = {
 	"primaryTable": "string(default=auto)",
 	"autoSyncInputTable": "boolean(default=True)",
 	"primaryInputTable": "string(default=auto)",
+	"activePrimaryTables": "string(default=auto)",
 	"activeTables": "string(default=fa-ir-g1.utb)",
 	"activeLanguages": "string(default=arabic_persian)",
 	"tactileMarker": "string(default=none)",
@@ -224,26 +225,9 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 				break
 		self.statusCellChoice.SetSelection(sc_idx)
 
-		# Primary Output Table
-		self.sorted_output_tables = sorted(self.available_output_tables, key=lambda t: t.displayName.lower())
-		# Translators: Option to automatically use active NVDA output braille table
-		prim_out_choices = [_("Automatic (Use active NVDA output table)")] + [
-			t.displayName for t in self.sorted_output_tables
-		]
-		# Translators: Label for primary output braille table selection
-		self.primaryChoice = sHelper.addLabeledControl(
-			_("&Primary output braille table:"), wx.Choice, choices=prim_out_choices
-		)
-		cur_primary = cfg.get("primaryTable", "auto")
-		prim_out_idx = 0
-		if cur_primary and cur_primary != "auto":
-			for idx, t in enumerate(self.sorted_output_tables):
-				if t.fileName == cur_primary:
-					prim_out_idx = idx + 1
-					break
-		self.primaryChoice.SetSelection(prim_out_idx)
-
 		# Math Braille Table
+		self.sorted_output_tables = sorted(self.available_output_tables, key=lambda t: t.displayName.lower())
+		self.sorted_input_tables = sorted(self.available_input_tables, key=lambda t: t.displayName.lower())
 		self.math_tables = [
 			t for t in self.sorted_output_tables
 			if "math" in t.fileName.lower() or "nemeth" in t.fileName.lower()
@@ -263,27 +247,78 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 				break
 		self.mathTableChoice.SetSelection(math_sel)
 
-		# Primary Input Table
-		self.sorted_input_tables = sorted(self.available_input_tables, key=lambda t: t.displayName.lower())
-		# Translators: Option to automatically follow active NVDA input braille table
-		prim_inp_choices = [_("Automatic (Follow active NVDA input table)")] + [
-			t.displayName for t in self.sorted_input_tables
-		]
-		# Translators: Label for primary Perkins braille input table selection
-		self.primaryInputChoice = sHelper.addLabeledControl(
-			_("Primary Perkins &input braille table:"), wx.Choice, choices=prim_inp_choices
+		# =============================================================
+		# 2. Active Primary Braille Tables List
+		# =============================================================
+		sHelper.addItem(wx.StaticLine(self))
+		# Translators: Section heading for the active primary braille tables list
+		sHelper.addItem(
+			wx.StaticText(self, label=_("&Active Primary Braille Tables:"))
 		)
-		cur_inp = cfg.get("primaryInputTable", "auto")
-		prim_inp_idx = 0
-		if cur_inp and cur_inp != "auto":
-			for idx, t in enumerate(self.sorted_input_tables):
-				if t.fileName == cur_inp:
-					prim_inp_idx = idx + 1
-					break
-		self.primaryInputChoice.SetSelection(prim_inp_idx)
+
+		self.primaryTablesList = wx.ListBox(self, style=wx.LB_SINGLE)
+		sHelper.addItem(self.primaryTablesList)
+		self.primaryTablesList.Bind(wx.EVT_LISTBOX_DCLICK, self.onConfigurePrimaryTable)
+		self.primaryTablesList.Bind(wx.EVT_CHAR_HOOK, self.onPrimaryListKey)
+
+		# Load active primary tables from config
+		self.primary_active_items: List[Dict[str, str]] = []
+		raw_prim_tables = cfg.get("activePrimaryTables")
+		if raw_prim_tables:
+			if isinstance(raw_prim_tables, str):
+				p_files = [t.strip() for t in raw_prim_tables.split(",") if t.strip()]
+			else:
+				p_files = list(raw_prim_tables)
+		else:
+			legacy_prim = cfg.get("primaryTable", "auto")
+			p_files = [legacy_prim] if legacy_prim else ["auto"]
+
+		for tbl in p_files:
+			if tbl == "auto":
+				inp_tbl = cfg.get("primaryInputTable", "auto")
+			else:
+				inp_tbl = cfg.get(f"inputTable_{tbl}")
+				if not inp_tbl or inp_tbl == "auto":
+					if tbl == cfg.get("primaryTable"):
+						inp_tbl = cfg.get("primaryInputTable", "auto")
+					if not inp_tbl or inp_tbl == "auto":
+						s_info = scripts_data.resolve_table_to_script(tbl)
+						inp_tbl = s_info.default_input_table if s_info else tbl
+			self.primary_active_items.append({
+				"out_table": tbl,
+				"inp_table": inp_tbl,
+			})
+		if not self.primary_active_items:
+			self.primary_active_items.append({"out_table": "auto", "inp_table": "auto"})
+
+		self.refreshPrimaryTablesList()
+
+		# Action buttons for Primary Braille Tables
+		prim_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+		# Translators: Button to add a new primary braille table
+		self.addPrimaryButton = wx.Button(self, label=_("Add &Primary Table..."))
+		self.addPrimaryButton.Bind(wx.EVT_BUTTON, self.onAddPrimaryTable)
+		prim_btn_sizer.Add(self.addPrimaryButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to configure the selected primary braille table
+		self.editPrimaryButton = wx.Button(self, label=_("Configure P&rimary Table..."))
+		self.editPrimaryButton.Bind(wx.EVT_BUTTON, self.onConfigurePrimaryTable)
+		prim_btn_sizer.Add(self.editPrimaryButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to remove the selected primary braille table
+		self.removePrimaryButton = wx.Button(self, label=_("Re&move Primary Table"))
+		self.removePrimaryButton.Bind(wx.EVT_BUTTON, self.onRemovePrimaryTable)
+		prim_btn_sizer.Add(self.removePrimaryButton, 0, wx.RIGHT, 5)
+
+		# Translators: Button to reset primary tables to automatic
+		self.resetPrimaryButton = wx.Button(self, label=_("Reset Primary to &Automatic"))
+		self.resetPrimaryButton.Bind(wx.EVT_BUTTON, self.onResetPrimaryTable)
+		prim_btn_sizer.Add(self.resetPrimaryButton, 0)
+
+		sHelper.addItem(prim_btn_sizer)
 
 		# =============================================================
-		# 2. Active Secondary Braille Tables List
+		# 3. Active Secondary Braille Tables List
 		# =============================================================
 		sHelper.addItem(wx.StaticLine(self))
 		# Translators: Section heading for the active secondary braille tables list
@@ -365,6 +400,109 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 
 		sHelper.addItem(btn_sizer)
 
+	def formatPrimaryItemDisplay(self, item: Dict[str, str]) -> str:
+		if item["out_table"] == "auto":
+			out_dn = _("Automatic (Use active NVDA output table)")
+		else:
+			out_dn = f"{self.tbl_names.get(item['out_table'], item['out_table'])} ({item['out_table']})"
+
+		if item["inp_table"] == "auto":
+			inp_dn = _("Automatic (Follow active NVDA input table)")
+		else:
+			inp_dn = self.tbl_names.get(item["inp_table"], item["inp_table"])
+		return f"{out_dn}  —  Input: {inp_dn}"
+
+	def refreshPrimaryTablesList(self, select_idx: int = -1) -> None:
+		self.primaryTablesList.Clear()
+		for item in self.primary_active_items:
+			self.primaryTablesList.Append(self.formatPrimaryItemDisplay(item))
+		if self.primary_active_items:
+			if 0 <= select_idx < len(self.primary_active_items):
+				self.primaryTablesList.SetSelection(select_idx)
+			else:
+				self.primaryTablesList.SetSelection(0)
+
+	def onPrimaryListKey(self, event: wx.KeyEvent) -> None:
+		key = event.GetKeyCode()
+		if key == wx.WXK_DELETE:
+			self.onRemovePrimaryTable(event)
+		elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+			self.onConfigurePrimaryTable(event)
+		else:
+			event.Skip()
+
+	def onAddPrimaryTable(self, event: wx.Event) -> None:
+		existing_files = [item["out_table"] for item in self.primary_active_items if item["out_table"] != "auto"]
+		if hasattr(self, "active_items"):
+			existing_files.extend([item["out_table"] for item in self.active_items])
+		dlg = AddTableDialog(
+			self,
+			existing_files,
+			self.available_output_tables,
+			self.available_input_tables,
+			title=_("Add Primary Braille Table"),
+		)
+		if dlg.ShowModal() == wx.ID_OK:
+			out_tbl, inp_tbl = dlg.get_result()
+			if len(self.primary_active_items) == 1 and self.primary_active_items[0]["out_table"] == "auto":
+				self.primary_active_items = [{"out_table": out_tbl, "inp_table": inp_tbl}]
+			else:
+				found = False
+				for item in self.primary_active_items:
+					if item["out_table"] == out_tbl:
+						item["inp_table"] = inp_tbl
+						found = True
+						break
+				if not found:
+					self.primary_active_items.append({
+						"out_table": out_tbl,
+						"inp_table": inp_tbl,
+					})
+			self.refreshPrimaryTablesList(select_idx=len(self.primary_active_items) - 1)
+		dlg.Destroy()
+
+	def onConfigurePrimaryTable(self, event: wx.Event) -> None:
+		sel = self.primaryTablesList.GetSelection()
+		if sel == wx.NOT_FOUND or not (0 <= sel < len(self.primary_active_items)):
+			# Translators: Message box text when no primary table is selected for configuration
+			gui.messageBox(
+				_("Please select a primary braille table from the list to configure."),
+				_("Auto Braille"),
+				wx.OK | wx.ICON_INFORMATION,
+				self,
+			)
+			return
+
+		item = self.primary_active_items[sel]
+		dlg = EditTableDialog(
+			self,
+			item["out_table"],
+			item["inp_table"],
+			available_output_tables=self.available_output_tables,
+			available_input_tables=self.available_input_tables,
+			title=_("Configure Primary Braille Table"),
+		)
+		if dlg.ShowModal() == wx.ID_OK:
+			out_tbl, inp_tbl = dlg.get_result()
+			item["out_table"] = out_tbl
+			item["inp_table"] = inp_tbl
+			self.refreshPrimaryTablesList(select_idx=sel)
+		dlg.Destroy()
+
+	def onRemovePrimaryTable(self, event: wx.Event) -> None:
+		sel = self.primaryTablesList.GetSelection()
+		if sel == wx.NOT_FOUND or not (0 <= sel < len(self.primary_active_items)):
+			return
+		self.primary_active_items.pop(sel)
+		if not self.primary_active_items:
+			self.primary_active_items = [{"out_table": "auto", "inp_table": "auto"}]
+		new_sel = min(sel, len(self.primary_active_items) - 1)
+		self.refreshPrimaryTablesList(select_idx=new_sel)
+
+	def onResetPrimaryTable(self, event: wx.Event) -> None:
+		self.primary_active_items = [{"out_table": "auto", "inp_table": "auto"}]
+		self.refreshPrimaryTablesList(select_idx=0)
+
 	def formatItemDisplay(self, item: Dict[str, str]) -> str:
 		out_dn = self.tbl_names.get(item["out_table"], item["out_table"])
 		inp_dn = self.tbl_names.get(item["inp_table"], item["inp_table"])
@@ -390,19 +528,31 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 			event.Skip()
 
 	def selectedPrimaryOutTable(self) -> str:
-		p_sel = self.primaryChoice.GetSelection()
-		if p_sel <= 0 or p_sel > len(self.sorted_output_tables):
-			return "auto"
-		return self.sorted_output_tables[p_sel - 1].fileName
+		if hasattr(self, "primary_active_items") and self.primary_active_items:
+			out_val = self.primary_active_items[0].get("out_table", "auto")
+			if out_val != "auto" or not (hasattr(self, "primaryChoice") and self.primaryChoice):
+				return out_val
+		if hasattr(self, "primaryChoice") and self.primaryChoice:
+			p_sel = self.primaryChoice.GetSelection()
+			if p_sel > 0 and p_sel <= len(getattr(self, "sorted_output_tables", [])):
+				return self.sorted_output_tables[p_sel - 1].fileName
+		return "auto"
 
 	def selectedPrimaryInpTable(self) -> str:
-		pinp_sel = self.primaryInputChoice.GetSelection()
-		if pinp_sel <= 0 or pinp_sel > len(self.sorted_input_tables):
-			return "auto"
-		return self.sorted_input_tables[pinp_sel - 1].fileName
+		if hasattr(self, "primary_active_items") and self.primary_active_items:
+			inp_val = self.primary_active_items[0].get("inp_table", "auto")
+			if inp_val != "auto" or not (hasattr(self, "primaryInputChoice") and self.primaryInputChoice):
+				return inp_val
+		if hasattr(self, "primaryInputChoice") and self.primaryInputChoice:
+			pinp_sel = self.primaryInputChoice.GetSelection()
+			if pinp_sel > 0 and pinp_sel <= len(getattr(self, "sorted_input_tables", [])):
+				return self.sorted_input_tables[pinp_sel - 1].fileName
+		return "auto"
 
 	def onAddTable(self, event: wx.Event) -> None:
 		existing_files = [item["out_table"] for item in self.active_items]
+		if hasattr(self, "primary_active_items"):
+			existing_files.extend([item["out_table"] for item in self.primary_active_items if item["out_table"] != "auto"])
 		prim_file = self.selectedPrimaryOutTable()
 		dlg = AddTableDialog(
 			self,
@@ -539,6 +689,17 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		if 0 <= sc_sel < len(self.statusCellOptions):
 			cfg["statusCellLanguage"] = self.statusCellOptions[sc_sel][0]
 
+		# Save Active Primary Tables
+		if hasattr(self, "primary_active_items") and self.primary_active_items:
+			prim_out_list = [item["out_table"] for item in self.primary_active_items]
+			cfg["activePrimaryTables"] = ",".join(prim_out_list)
+
+			for item in self.primary_active_items:
+				tbl = item["out_table"]
+				inp_tbl = item["inp_table"]
+				if tbl != "auto":
+					cfg[f"inputTable_{tbl}"] = inp_tbl
+
 		prim_out = self.selectedPrimaryOutTable()
 		prim_inp = self.selectedPrimaryInpTable()
 		cfg["primaryTable"] = prim_out
@@ -591,7 +752,7 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		segmenter.clear_regex_cache()
 
 		# Refresh braille display output immediately
-		if braille.handler and api.getFocusObject():
+		if getattr(braille, "handler", None) and api.getFocusObject():
 			braille.handler.handleGainFocus(api.getFocusObject())
 
 		# Apply status cells immediately
