@@ -292,6 +292,13 @@ def detect_keyboard_tables(
 def resolve_concrete_table_name(table_name: str, is_input: bool = True) -> str:
 	"""Ensure table name is not 'auto', resolving to a concrete Liblouis table file."""
 	if not table_name or table_name == "auto":
+		try:
+			conf_key = "inputTable" if is_input else "translationTable"
+			conf_table = config.conf["braille"][conf_key]
+			if conf_table and conf_table != "auto":
+				return conf_table
+		except Exception:
+			pass
 		if hasattr(brailleTables, "getDefaultTableForCurLang"):
 			try:
 				t_type = brailleTables.TableType.INPUT if is_input else brailleTables.TableType.OUTPUT
@@ -300,14 +307,27 @@ def resolve_concrete_table_name(table_name: str, is_input: bool = True) -> str:
 					return resolved
 			except Exception:
 				pass
-		try:
-			conf_table = config.conf["braille"]["inputTable"]
-			if conf_table and conf_table != "auto":
-				return conf_table
-		except Exception:
-			pass
 		return "en-ueb-g1.ctb"
 	return table_name
+
+
+def _resolve_primary_input_table(primary_script: str, fallback_candidate: str) -> str:
+	"""Helper to resolve primary input table respecting NVDA's active input table and grade."""
+	cfg = config.conf.get("autoBraille", {})
+	primary_configured = cfg.get("primaryInputTable", "auto")
+	if primary_configured and primary_configured != "auto":
+		return resolve_concrete_table_name(primary_configured, is_input=True)
+
+	try:
+		nvda_input = config.conf["braille"]["inputTable"]
+		if nvda_input and nvda_input != "auto":
+			return nvda_input
+	except Exception:
+		pass
+
+	info = scripts_data.get_script_info(primary_script)
+	fallback = info.default_input_table if info else fallback_candidate
+	return resolve_concrete_table_name(fallback, is_input=True)
 
 
 def resolve_input_table_for_lang(lang_id: int) -> str:
@@ -327,12 +347,7 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 		prim_code = scripts_data.get_table_lang_code(primary_tbl)
 		# If it matches primary table, return primary input table
 		if exact_tbl == primary_tbl or exact_code == prim_code:
-			primary_configured = cfg.get("primaryInputTable", "auto")
-			if not primary_configured or primary_configured == "auto":
-				info = scripts_data.get_script_info(primary_script)
-				fallback = info.default_input_table if info else exact_tbl
-				return resolve_concrete_table_name(fallback, is_input=True)
-			return resolve_concrete_table_name(primary_configured, is_input=True)
+			return _resolve_primary_input_table(primary_script, exact_tbl)
 
 		# If it matches an active secondary table, use that table's input mapping
 		for tbl in sec_tables:
@@ -350,12 +365,7 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 
 	# If layout matches primary script or unknown, return Primary input table
 	if script_id == primary_script:
-		primary_configured = cfg.get("primaryInputTable", "auto")
-		if not primary_configured or primary_configured == "auto":
-			info = scripts_data.get_script_info(primary_script)
-			fallback = info.default_input_table if info else "en-ueb-g1.ctb"
-			return resolve_concrete_table_name(fallback, is_input=True)
-		return resolve_concrete_table_name(primary_configured, is_input=True)
+		return _resolve_primary_input_table(primary_script, "en-ueb-g1.ctb")
 
 	# If layout matches a secondary script, check active secondary tables
 	if script_id:
@@ -379,12 +389,7 @@ def resolve_input_table_for_lang(lang_id: int) -> str:
 				return resolve_concrete_table_name(configured, is_input=True)
 
 	# Fallback: Primary input table
-	primary_configured = cfg.get("primaryInputTable", "auto")
-	if not primary_configured or primary_configured == "auto":
-		info = scripts_data.get_script_info(primary_script)
-		fallback = info.default_input_table if info else "en-ueb-g1.ctb"
-		return resolve_concrete_table_name(fallback, is_input=True)
-	return resolve_concrete_table_name(primary_configured, is_input=True)
+	return _resolve_primary_input_table(primary_script, "en-ueb-g1.ctb")
 
 
 def sync_input_table(force: bool = False) -> bool:

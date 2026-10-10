@@ -53,7 +53,7 @@ addonHandler.initTranslation()
 confspec: Dict[str, str] = {
 	# General & Primary
 	"enabled": "boolean(default=True)",
-	"primaryLanguage": "string(default=latin)",
+	"primaryLanguage": "string(default=auto)",
 	"primaryTable": "string(default=auto)",
 	"autoSyncInputTable": "boolean(default=True)",
 	"primaryInputTable": "string(default=auto)",
@@ -548,8 +548,11 @@ class AutoBrailleSettingsPanel(SettingsPanel):
 		if 0 <= math_sel < len(self.math_tables):
 			cfg["mathTable"] = self.math_tables[math_sel].fileName
 
-		prim_script = scripts_data.resolve_table_to_script(prim_out)
-		cfg["primaryLanguage"] = prim_script.id
+		if prim_out == "auto":
+			cfg["primaryLanguage"] = "auto"
+		else:
+			prim_script = scripts_data.resolve_table_to_script(prim_out)
+			cfg["primaryLanguage"] = prim_script.id if prim_script else "latin"
 
 		cfg["customDictionary"] = scripts_data.serialize_custom_dictionary(self.custom_dictionary_entries)
 
@@ -798,10 +801,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		has_multiple_primary = len(translator.get_candidate_tables_for_script(primary_script, tableList)) > 1
 
-		# Fast check: If text contains no characters belonging to any enabled secondary script, no doc spans, no multiple primary tables, no tactile markers, no math candidate, no latin sub-language diacritics, and no custom dictionary
+		has_doc_divergence = False
+		if doc_spans:
+			for _, _, dlang in doc_spans:
+				if dlang:
+					d_script = scripts_data.resolve_doc_lang_to_script(dlang)
+					if d_script and d_script.id != primary_script:
+						has_doc_divergence = True
+						break
+			if len(doc_spans) > 1:
+				has_doc_divergence = True
+
+		# Fast check: If text contains no characters belonging to any enabled secondary script, no divergent doc spans, no multiple primary tables, no tactile markers, no math candidate, no latin sub-language diacritics, and no custom dictionary
 		if (
 			not has_multiple_primary
-			and not doc_spans
+			and not has_doc_divergence
 			and tactile_marker == "none"
 			and not has_math
 			and not has_latin_sub
@@ -812,9 +826,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			primary_tbl = cfg_ab.get("primaryTable", "auto")
 			if primary_tbl and primary_tbl != "auto":
 				chain = translator.get_table_chain_for_file(primary_tbl)
-				return self._orig_translate(chain, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
-			elif primary_script != "latin":
-				chain = translator.get_script_table_chain(primary_script, tableList)
 				return self._orig_translate(chain, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
 			return self._orig_translate(tableList, inbuf, typeform=typeform, mode=mode, cursorPos=cursorPos)
 

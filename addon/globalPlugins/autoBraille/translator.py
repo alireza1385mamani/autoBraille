@@ -153,8 +153,9 @@ def get_active_secondary_tables() -> List[str]:
 def get_primary_script(active_tables: Optional[List[str]] = None) -> str:
 	"""Return the script ID corresponding to the primary output table."""
 	cfg = config.conf.get("autoBraille", {})
-	lang_cfg = cfg.get("primaryLanguage")
-	if lang_cfg and lang_cfg != "auto" and scripts_data.get_script_info(lang_cfg):
+	prim_tbl_cfg = cfg.get("primaryTable", "auto")
+	lang_cfg = cfg.get("primaryLanguage", "auto")
+	if prim_tbl_cfg != "auto" and lang_cfg and lang_cfg != "auto" and scripts_data.get_script_info(lang_cfg):
 		return lang_cfg
 
 	prim_table = get_primary_table(active_tables)
@@ -180,10 +181,9 @@ def get_candidate_tables_for_script(script_name: str, active_tables: Optional[Li
 	"""Get all active tables for a given script in priority order (primary first if matching)."""
 	primary_script = get_primary_script(active_tables)
 	candidates: List[str] = []
-	if script_name == primary_script:
-		prim_tbl = get_primary_table(active_tables)
-		if prim_tbl:
-			candidates.append(prim_tbl)
+	prim_tbl = get_primary_table(active_tables)
+	if script_name == primary_script and prim_tbl:
+		candidates.append(prim_tbl)
 
 	sec_tables = get_active_secondary_tables()
 	for tbl in sec_tables:
@@ -194,6 +194,10 @@ def get_candidate_tables_for_script(script_name: str, active_tables: Optional[Li
 	if not candidates:
 		info = scripts_data.get_script_info(script_name)
 		default_tbl = info.default_output_table if info else "en-ueb-g1.ctb"
+		if prim_tbl and scripts_data.is_contracted_table(prim_tbl):
+			g2_comp = scripts_data.get_grade2_companion_table(default_tbl)
+			if g2_comp:
+				default_tbl = g2_comp
 		candidates.append(default_tbl)
 
 	return candidates
@@ -206,8 +210,14 @@ def get_active_latin_tables(active_tables: Optional[List[str]] = None) -> List[s
 	if scripts_data.is_latin_table(primary_tbl):
 		latin_tables.append(primary_tbl)
 
-	sec_tables = get_active_secondary_tables() if active_tables is None else active_tables
-	for tbl in sec_tables:
+	sec_tables = get_active_secondary_tables()
+	all_candidates = list(sec_tables)
+	if active_tables:
+		for at in active_tables:
+			base = os.path.basename(at)
+			if base not in all_candidates:
+				all_candidates.append(base)
+	for tbl in all_candidates:
 		if scripts_data.is_latin_table(tbl) and tbl not in latin_tables:
 			latin_tables.append(tbl)
 
@@ -344,13 +354,43 @@ def resolve_segment_table(
 		tbl_name = script.split(":", 1)[1]
 		target_chain = get_table_chain_for_file(tbl_name)
 
+	primary_tbl = get_primary_table(active_tables)
+	primary_script = get_primary_script(active_tables)
+
 	if not target_chain and doc_lang_spans:
 		for s_start, s_end, lang in doc_lang_spans:
 			if lang and (s_start <= start_idx < s_end or s_start < end_idx <= s_end):
+				doc_lang_code = scripts_data.normalize_doc_lang(lang)
+				primary_lang_code = scripts_data.get_table_lang_code(primary_tbl)
+
+				# 1. If document language corresponds to the primary language, use user-configured primary table
+				if doc_lang_code and primary_lang_code and doc_lang_code == primary_lang_code:
+					target_chain = get_table_chain_for_file(primary_tbl)
+					break
+				elif not doc_lang_code and scripts_data.resolve_table_to_script(primary_tbl) and scripts_data.resolve_table_to_script(primary_tbl).id == script:
+					target_chain = get_table_chain_for_file(primary_tbl)
+					break
+
+				# 2. Check if user configured an active secondary table for this language
+				sec_tables = get_active_secondary_tables()
+				matched_sec = None
+				for st in sec_tables:
+					if scripts_data.get_table_lang_code(st) == doc_lang_code:
+						matched_sec = st
+						break
+				if matched_sec:
+					target_chain = get_table_chain_for_file(matched_sec)
+					break
+
+				# 3. Resolve via standard doc lang map, respecting Grade 2 if primary table is contracted
 				doc_tbl = scripts_data.resolve_doc_lang_to_table(lang)
 				if doc_tbl:
 					tbl_script = scripts_data.resolve_table_to_script(doc_tbl)
 					if tbl_script and tbl_script.id == script:
+						if scripts_data.is_contracted_table(primary_tbl):
+							g2_comp = scripts_data.get_grade2_companion_table(doc_tbl)
+							if g2_comp:
+								doc_tbl = g2_comp
 						target_chain = get_table_chain_for_file(doc_tbl)
 						break
 

@@ -961,6 +961,14 @@ DOC_LANG_TABLE_MAP: Dict[str, str] = {
 }
 
 
+def normalize_doc_lang(doc_lang: str) -> str:
+	"""Extract primary ISO/BCP-47 language subtag from a document language string."""
+	if not doc_lang:
+		return ""
+	clean = doc_lang.strip().lower().replace("_", "-")
+	return clean.split("-")[0]
+
+
 def resolve_doc_lang_to_table(doc_lang: str) -> Optional[str]:
 	"""Resolve BCP-47 / ISO language tag directly to a concrete braille table filename."""
 	if not doc_lang:
@@ -1153,6 +1161,19 @@ GRADE2_COMPANION_MAP: Dict[str, str] = {
 	"ru-g2.ctb": "ru-litbrl.ctb",
 }
 
+GRADE1_TO_GRADE2_MAP: Dict[str, str] = {
+	"en-ueb-g1.ctb": "en-ueb-g2.ctb",
+	"en-us-g1.ctb": "en-us-g2.ctb",
+	"en-gb-g1.ctb": "en-gb-g2.ctb",
+	"ar-ar-g1.utb": "ar-ar-g2.ctb",
+	"de-g1.ctb": "de-g2.ctb",
+	"fr-bfu-comp8.ctb": "fr-bfu-g2.ctb",
+	"es-g1.ctb": "es-g2.ctb",
+	"it-it-g1.utb": "it-it-g2.ctb",
+	"pt-pt-g1.utb": "pt-pt-g2.ctb",
+	"ru-litbrl.ctb": "ru-g2.ctb",
+}
+
 
 def is_contracted_table(table_name: str) -> bool:
 	"""Check if a Liblouis table file is a Grade 2 contracted table."""
@@ -1174,6 +1195,19 @@ def get_grade1_companion_table(table_name: str) -> Optional[str]:
 	# Fallback heuristic: replace -g2 with -g1
 	if "-g2" in base:
 		return base.replace("-g2", "-g1")
+	return None
+
+
+def get_grade2_companion_table(table_name: str) -> Optional[str]:
+	"""Get the contracted Grade 2 companion table for an uncontracted Grade 1 table."""
+	if not table_name:
+		return None
+	base = os.path.basename(table_name).lower()
+	if base in GRADE1_TO_GRADE2_MAP:
+		return GRADE1_TO_GRADE2_MAP[base]
+	# Fallback heuristic: replace -g1 with -g2
+	if "-g1" in base:
+		return base.replace("-g1", "-g2")
 	return None
 
 
@@ -1204,14 +1238,15 @@ def is_technical_identifier(text: str) -> bool:
 	stripped = text.strip()
 	if not stripped:
 		return False
+	# If text has multiple words separated by whitespace, it is literary prose, not an identifier
+	if len(stripped.split()) > 1:
+		return False
 	# Check for programming symbols: underscores, backslashes, @, $, #, slashes
 	if any(sym in stripped for sym in ("_", "\\", "/", "@", "$", "#", "::", "->")):
 		return True
 	# Check for CamelCase (uppercase letter inside lowercase word, e.g. 'fileName', 'getData')
-	words = stripped.split()
-	for w in words:
-		if len(w) > 2 and any(c.islower() for c in w) and any(c.isupper() for c in w[1:]):
-			return True
+	if len(stripped) > 2 and any(c.islower() for c in stripped) and any(c.isupper() for c in stripped[1:]):
+		return True
 	return False
 
 

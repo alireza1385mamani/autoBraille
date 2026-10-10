@@ -32,9 +32,10 @@
 * **Automatic Script Compatibility Validation:** If text is marked with an incorrect language tag, Auto Braille automatically validates the characters and falls back to the Unicode script detector so text is never garbled!
 
 ### 5. Contracted Braille (Grade 2) Support & Boundary Guarding
-* **Full Grade 2 Support:** Configure any secondary or primary table to use Contracted Braille (e.g. `en-ueb-g2.ctb`, `ar-ar-g2.ctb`, `de-g2.ctb`).
+* **Full Grade 1 & Grade 2 Synchronization:** Changing braille tables in NVDA Settings or via gestures between Grade 1 (uncontracted) and Grade 2 (contracted) across all supported languages (English UEB/US, German, Arabic, French, Spanish, Russian, etc.) is fully and immediately respected for both reading and Perkins typing.
+* **Document Tag Grade Protection:** Active application and document language tags (e.g. `lang="en"`) matching the active table preserve your selected Grade 2 table and no longer force Grade 1 fallback. Foreign language sections automatically adopt their Grade 2 companion table when the primary table is contracted.
 * **Single-Letter Word-Sign Protection:** In Grade 2 UEB, isolated letters contract to whole words (`b` = "but", `c` = "can", `x` = "it"). Auto Braille automatically routes isolated single letters flanked by foreign text or punctuation (e.g. `گزینه b`, `کلید c`) through an uncontracted Grade 1 companion table, preventing accidental word contractions!
-* **Code & Identifier Protection:** Programming variables and technical identifiers (such as `user_id`, `file_name`, `camelCase`, or file paths) are protected from literary contractions so you can read and debug code accurately.
+* **Code & Identifier Protection:** Programming variables and technical identifiers (such as `user_id`, `file_name`, `camelCase`, or file paths) are protected from literary contractions so you can read and debug code accurately, while natural prose containing symbols (`and/or`, `$10`, `@user`) correctly retains literary contractions.
 * **Numeric Boundary Lookback:** Letters immediately following numbers across language boundaries (e.g. `123b` or `۱۲۳a`) are protected from digit-letter bleeding.
 
 ### 6. Full Latin-Script Sub-Language Diacritic Detection

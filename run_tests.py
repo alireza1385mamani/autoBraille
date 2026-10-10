@@ -23,6 +23,7 @@ TEST_FILES = [
     "tests/test_auto_detect_keyboards.py",
     "tests/test_latin_sub_languages.py",
     "tests/test_new_features.py",
+    "tests/test_grade_sync.py",
 ]
 
 

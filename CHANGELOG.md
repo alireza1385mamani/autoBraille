@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2026-10-10
+
+### Fixed
+- **NVDA Braille Table Grade Synchronization**:
+  - Fixed an issue where changing the braille output table in NVDA Settings (or via input gestures) between Grade 1 and Grade 2 (or any supported grade) did not respect the selected grade and erroneously fell back to uncontracted Grade 1.
+  - Protected primary table grade against document language tag overrides: Document language tags (e.g. `lang="en"`) matching the active primary table's language no longer overwrite the user-selected table with static Grade 1 defaults.
+  - Foreign document language tags now automatically promote to their contracted Grade 2 companion table when the user's primary table is contracted (e.g., Spanish or German sections within an English Grade 2 context).
+  - Fixed `is_technical_identifier()` false positives: Multi-word natural sentences containing slashes (`/`), currency symbols (`$`), `@`, or `#` (such as `and/or`, `http://`, or `$10`) are preserved as literary prose and no longer trigger fallback to Grade 1.
+  - Synchronized Perkins braille input with NVDA's active input table: When `primaryInputTable` is set to `auto`, Auto Braille now directly respects NVDA's configured `inputTable` and its selected grade.
+  - Fixed `primaryLanguage` default in `confspec` from `"latin"` to `"auto"` so non-Latin primary tables (Persian, Arabic, Cyrillic, Hebrew) correctly set their primary script dynamically without manual reconfiguration.
+  - Preserved configured secondary Latin tables in `get_active_latin_tables()`.
+
+### Added
+- **Dedicated Grade Synchronization Test Suite**:
+  - Added `tests/test_grade_sync.py` with 8 test cases validating Grade 1 vs Grade 2 respect, document language tag shielding, mixed-script translation, German/Arabic Grade 2 selection, and Perkins input synchronization.
+  - Expanded `run_tests.py` to 10 comprehensive test suites with 100% pass rate.
+
 ## [1.0.6] - 2026-09-27
 
 ### Added

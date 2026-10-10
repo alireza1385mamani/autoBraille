@@ -31,7 +31,7 @@
     <h1>Auto Braille: Universal Multi-Script In-Line Translation &amp; Perkins Input for NVDA</h1>
     
     <div class="meta">
-        <p><strong>Version:</strong> 1.0.6 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.2 | <strong>License:</strong> GNU General Public License v2.0</p>
+        <p><strong>Version:</strong> 1.0.7 | <strong>NVDA Compatibility:</strong> 2024.1 to 2026.2 | <strong>License:</strong> GNU General Public License v2.0</p>
         <p><strong>Author:</strong> Alireza Mamani &amp; Antigravity (&lt;<a href="https://github.com/alireza1385mamani">https://github.com/alireza1385mamani</a>&gt;)<br>
         <strong>Repository:</strong> &lt;<a href="https://github.com/alireza1385mamani/autoBraille">https://github.com/alireza1385mamani/autoBraille</a>&gt;</p>
     </div>
@@ -73,9 +73,10 @@
 
     <h3>5. Contracted Braille (Grade 2) Support &amp; Boundary Guarding</h3>
     <ul>
-        <li><strong>Full Grade 2 Support:</strong> Configure any table to use Contracted Braille (e.g. <code>en-ueb-g2.ctb</code>, <code>ar-ar-g2.ctb</code>, <code>de-g2.ctb</code>).</li>
+        <li><strong>Full Grade 1 &amp; Grade 2 Synchronization:</strong> Changing braille tables in NVDA Settings or via gestures between Grade 1 (uncontracted) and Grade 2 (contracted) across all supported languages (English UEB/US, German, Arabic, French, Spanish, Russian, etc.) is fully and immediately respected for both reading and Perkins typing.</li>
+        <li><strong>Document Tag Grade Protection:</strong> Active application and document language tags (e.g. <code>lang="en"</code>) matching the active table preserve your selected Grade 2 table and no longer force Grade 1 fallback. Foreign language sections automatically adopt their Grade 2 companion table when the primary table is contracted.</li>
         <li><strong>Single-Letter Word-Sign Protection:</strong> In Grade 2 UEB, isolated letters contract to whole words (<code>b</code> = "but", <code>c</code> = "can", <code>x</code> = "it"). Auto Braille automatically routes isolated single letters flanked by foreign text or punctuation (e.g. <code>گزینه b</code>, <code>کلید c</code>) through an uncontracted Grade 1 companion table.</li>
-        <li><strong>Code &amp; Identifier Protection:</strong> Technical identifiers (such as <code>user_id</code>, <code>file_name</code>, <code>camelCase</code>, or file paths) are protected from literary contractions so you can read and debug code accurately.</li>
+        <li><strong>Code &amp; Identifier Protection:</strong> Technical identifiers (such as <code>user_id</code>, <code>file_name</code>, <code>camelCase</code>, or file paths) are protected from literary contractions so you can read and debug code accurately, while natural prose containing symbols (<code>and/or</code>, <code>$10</code>) correctly retains literary contractions.</li>
         <li><strong>Numeric Boundary Lookback:</strong> Letters immediately following digits across boundaries (e.g. <code>123b</code>) are shielded from digit-letter contraction bleed.</li>
     </ul>
 

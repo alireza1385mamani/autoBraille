@@ -270,22 +270,34 @@ flowchart TD
     NormalG1 --> Output
 ```
 
-### 1. Companion Table Resolution (`GRADE2_COMPANION_MAP`)
-Every Grade 2 contracted table is paired with its Grade 1 uncontracted counterpart in `scripts_data.py`:
+### 1. Bidirectional Companion Table Resolution (`GRADE2_COMPANION_MAP` & `GRADE1_TO_GRADE2_MAP`)
+Every Grade 2 contracted table is bidirectionally mapped to its Grade 1 uncontracted counterpart in `scripts_data.py`:
 * `en-ueb-g2.ctb` &harr; `en-ueb-g1.ctb`
+* `en-us-g2.ctb` &harr; `en-us-g1.ctb`
+* `en-gb-g2.ctb` &harr; `en-gb-g1.ctb`
 * `ar-ar-g2.ctb` &harr; `ar-ar-g1.utb`
 * `de-g2.ctb` &harr; `de-g1.ctb`
 * `es-g2.ctb` &harr; `es-g1.ctb`
+* `it-it-g2.ctb` &harr; `it-it-g1.utb`
+* `pt-pt-g2.ctb` &harr; `pt-pt-g1.utb`
 * `fr-bfu-g2.ctb` &harr; `fr-bfu-comp8.ctb`
 * `ru-g2.ctb` &harr; `ru-litbrl.ctb`
 
-### 2. Single-Letter Word-Sign Protection (`is_single_letter_wordsign_candidate`)
+Using `get_grade1_companion_table()` and `get_grade2_companion_table()`, Auto Braille dynamically switches between contracted and uncontracted tables on demand.
+
+### 2. Primary Table Grade & Document Language Tag Protection
+When the user selects a Grade 2 contracted table in NVDA Settings:
+* **Document Tag Shielding:** In `resolve_segment_table()`, when an application or control tag (e.g. `lang="en"`) matches the primary table's language code, Auto Braille directly retains `primary_tbl`, preventing static entries in `DOC_LANG_TABLE_MAP` from downgrading Grade 2 text to Grade 1.
+* **Foreign Tag Grade 2 Promotion:** When text in a foreign language (e.g. `lang="de"` or `lang="es"`) is encountered while operating in Grade 2, Auto Braille automatically promotes the foreign table to its Grade 2 companion table if available, ensuring a consistent contracted reading experience.
+* **Perkins Input Synchronization:** In `input_sync.py`, when `primaryInputTable` is configured as `"auto"`, the input synchronizer queries `config.conf["braille"]["inputTable"]` to ensure the Perkins keyboard matches the exact table and grade selected in NVDA.
+
+### 3. Single-Letter Word-Sign Protection (`is_single_letter_wordsign_candidate`)
 When an isolated letter (`b`, `c`, `x`) is flanked by non-Latin text (e.g. `گزینه b`), Auto Braille intercepts the token and routes it through the Grade 1 companion table. The reader sees the letter `b`, never the word `but`!
 
-### 3. Code & Identifier Guard (`is_technical_identifier`)
-Tokens containing programming symbols (`_`, `\`, `/`, `@`, `$`, `#`) or CamelCase capitalization (e.g. `fileName`, `user_id`) are routed through the companion Grade 1 table to prevent code corruption.
+### 4. Code & Identifier Guard (`is_technical_identifier`)
+Tokens containing programming symbols (`_`, `\`, `/`, `@`, `$`, `#`) or CamelCase capitalization (e.g. `fileName`, `user_id`) are routed through the companion Grade 1 table to prevent code corruption. Multi-word phrases (`len(stripped.split()) > 1`) containing symbols such as `and/or` or `$10` are recognized as natural prose and preserved in literary braille.
 
-### 4. Numeric Mode Boundary Lookback
+### 5. Numeric Mode Boundary Lookback
 If a Latin segment immediately follows a digit without whitespace (e.g. `123b` or `۱۲۳a`), Auto Braille detects the boundary lookback and translates the letter with Grade 1 to prevent numeric mode bleed.
 
 ---
@@ -543,7 +555,7 @@ Auto Braille utilizes a standalone packaging script:
 python build.py
 ```
 This automatically verifies bytecode compilation across all source modules with `py_compile`, inspects `addon/manifest.ini`, excludes bytecode (`.pyc`, `__pycache__`) and development files, and packages a clean distributable archive:
-`dist/autoBraille-1.0.6.nvda-addon`
+`dist/autoBraille-1.0.7.nvda-addon`
 
 ### Building via PowerShell (`build.ps1`)
 On Windows, you can package and optionally run all tests in one step:
@@ -553,13 +565,13 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -RunTests
 
 ### GitHub Actions CI/CD (`.github/workflows/release.yml`)
 * Pushes and PRs on `main` execute unit tests across a matrix of Windows runners testing **Python 3.14** and **Python 3.11**.
-* Pushing a version tag (`v*`, e.g. `v1.0.6`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
+* Pushing a version tag (`v*`, e.g. `v1.0.7`) triggers automated testing, packages `autoBraille-X.X.X.nvda-addon`, and creates a GitHub Release with the bundle attached.
 
 ---
 
 ## 19. Test Suites & Quality Assurance
 
-Auto Braille features a comprehensive 9-suite offline testing framework requiring zero running NVDA instances:
+Auto Braille features a comprehensive 10-suite offline testing framework requiring zero running NVDA instances:
 
 | Suite | File Path | Focus Area |
 | :--- | :--- | :--- |
@@ -572,10 +584,11 @@ Auto Braille features a comprehensive 9-suite offline testing framework requirin
 | **Auto-Detect Keyboards** | `tests/test_auto_detect_keyboards.py` | 64-bit safe `GetKeyboardLayoutList`, read-only registry sanitization, 3-tier dialect resolution, variant deduplication, primary table protection, Liblouis catalog validation, and wizard UI integration. |
 | **Latin Sub-Languages** | `tests/test_latin_sub_languages.py` | Sub-microsecond pure ASCII fast path (< 0.35 µs), German atomic word locking (`Kühlschrank`, `Straße`), French accents/ligatures (`cœur`, `français`), Turkish dotless `ı`/dotted `İ` preservation without case-folding corruption, Spanish/Scandinavian diacritic routing, English loanword stability (`café`), and 3-tier shared disambiguation. |
 | **New Features** | `tests/test_new_features.py` | Math & STEM LaTeX delimiters, plain formula parsing, currency collision guarding, hardware status cell tactile language codes, app-specific profile switching, unassigned display gesture cycling, and custom dictionary overrides. |
+| **Grade Synchronization** | `tests/test_grade_sync.py` | Grade 1 and Grade 2 table selection respect from NVDA Settings, document language tag shielding against Grade 1 fallback, foreign tag promotion to Grade 2, multi-word literary symbol preservation, and Perkins input grade synchronization. |
 
 ### Running Unit Tests
 
-Run all 9 test suites along with bytecode compilation checks in a single command using the unified test runner:
+Run all 10 test suites along with bytecode compilation checks in a single command using the unified test runner:
 ```bash
 python run_tests.py
 ```
@@ -591,6 +604,7 @@ python tests/test_grade2_boundary.py
 python tests/test_auto_detect_keyboards.py
 python tests/test_latin_sub_languages.py
 python tests/test_new_features.py
+python tests/test_grade_sync.py
 ```
 Or run the complete suite automatically through `build.ps1 -RunTests`.
 

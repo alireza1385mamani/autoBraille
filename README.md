@@ -145,8 +145,10 @@ Open NVDA Settings (**`NVDA + Control + G`**) and navigate to the **Auto Braille
 * **Preview & In-Place Customization:** An accessible preview dialog displays all detected languages. Highlight any language and click **Edit Table...** to customize its output or Perkins input table before applying!
 
 ### 🌟 Contracted Braille (Grade 2) & Boundary Guarding
+* **Full Grade 1 & Grade 2 Synchronization:** Switching NVDA's braille table between Grade 1 (uncontracted) and Grade 2 (contracted) across all supported languages (English UEB, English US, German, Arabic, French, Spanish, Russian, etc.) is immediately respected in both reading and Perkins typing.
+* **Document Language Tag Grade Protection:** Active application and document language tags (e.g. `lang="en"`) matching the active table's language preserve your chosen Grade 2 table without forcing Grade 1. Embedded foreign language sections automatically adopt their contracted Grade 2 companion table when operating in Grade 2.
 * **No Accidental Contractions:** In UEB Grade 2, isolated single letters contract to whole words (`b` = "but", `c` = "can", `x` = "it"). Auto Braille automatically guards single letters in mixed text (e.g. `گزینه b`, `کلید c`), routing them through uncontracted Grade 1 companion tables so words like `but` never appear by mistake!
-* **Code & Identifier Protection:** Variables and technical code (e.g. `user_id`, `file_name`, `camelCase`, file paths) are protected against literary contractions.
+* **Code & Identifier Protection:** Variables and technical code (e.g. `user_id`, `file_name`, `camelCase`, file paths) are protected against literary contractions, while natural prose containing symbols (`and/or`, `$10`, `@user`) correctly retains literary contractions.
 * **Numeric Boundary Lookback:** Letters immediately following digits (e.g. `123b`) are protected from numeric bleeding.
 
 ### 🌐 3-Tier Multi-Language Architecture
@@ -206,7 +208,7 @@ Or with PowerShell on Windows:
 
 ### Running Automated Tests
 
-Run the complete 9-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, Windows keyboard auto-detection, Latin sub-language diacritics, Math & STEM auto-detection, and hardware status cells with a single command:
+Run the complete 10-part unit test suite covering audit fixes, table resolution, segmentation, tactile indicators, document tags, intra-script disambiguation, Grade 2 boundary guarding, Windows keyboard auto-detection, Latin sub-language diacritics, Math & STEM auto-detection, hardware status cells, and Grade 1/Grade 2 synchronization with a single command:
 ```bash
 python run_tests.py
 ```
@@ -226,6 +228,7 @@ python tests/test_grade2_boundary.py
 python tests/test_auto_detect_keyboards.py
 python tests/test_latin_sub_languages.py
 python tests/test_new_features.py
+python tests/test_grade_sync.py
 ```
 
 ### Localization & Translations
